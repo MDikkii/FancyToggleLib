@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="FancyToggle">
+        <attr name="fancyToggleLeftTextColor" format="color|reference"/>
+        <attr name="fancyToggleRightTextColor" format="color|reference"/>
+
+        <attr name="fancyToggleRightText" format="string|reference"/>
+        <attr name="fancyToggleLeftText" format="string|reference"/>
+
+    </declare-styleable>
+</resources>
