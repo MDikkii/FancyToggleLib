@@ -13,6 +13,10 @@ import kotlin.math.max
 
 
 class FancyToggle : CompoundButton {
+    interface OnStateChangeListener {
+        fun onStateChange(state: ToggleState)
+    }
+
     constructor(context: Context?) : super(context) {
         initialization()
     }
@@ -37,6 +41,9 @@ class FancyToggle : CompoundButton {
     private lateinit var mBackgroundFillPaint: Paint
     private lateinit var mBackgroundStrokePaint: Paint
 
+    private lateinit var mCurrentState: ToggleState
+    private var mOnStateChangeListener: OnStateChangeListener? = null
+
 
     private var mLeftTextColor: Int = DEFAULT_LEFT_TEXT_COLOR
     private var mRightTextColor: Int = DEFAULT_RIGHT_TEXT_COLOR
@@ -47,12 +54,15 @@ class FancyToggle : CompoundButton {
     private var mRightTextMeasuredWidth: Float = 0f
     private var mLeftTextMeasuredWidth: Float = 0f
 
-    private var density: Float = 1f
+    private var mDensity: Float = 1f
     private var mTouchSlop: Int = 0
     private var mClickTimeout: Int = 0
 
+    private var mToggleVerticalMargin: Float = getPixelFromDp(10f)
+    private var mToggleHorizontalMargin: Float = getPixelFromDp(30f)
+
     private fun initialization(attrs: AttributeSet? = null) {
-        density = context.resources.displayMetrics.density
+        mDensity = context.resources.displayMetrics.density
         mTouchSlop = ViewConfiguration.get(context).scaledTouchSlop
         mClickTimeout = ViewConfiguration.getPressedStateDuration() + ViewConfiguration.getTapTimeout()
 
@@ -99,45 +109,50 @@ class FancyToggle : CompoundButton {
         mThumbStrokePaint.color = Color.RED
         mThumbStrokePaint.strokeWidth = getPixelFromDp(5f)
         mThumbStrokePaint.style = Paint.Style.STROKE
+
+        mToggleVerticalMargin = getPixelFromDp(10f)
+        mToggleHorizontalMargin = getPixelFromDp(30f)
+
+        mCurrentState = ToggleState.LEFT
     }
 
     override fun onDraw(canvas: Canvas?) {
 
         // background
         canvas?.drawRoundRect(
-            10f,
-            10f,
-            width - 10f,
-            height - 10f,
-            (height - 20f) / 2f,
-            (height - 20f) / 2f,
+            mToggleHorizontalMargin,
+            mToggleVerticalMargin,
+            width - mToggleHorizontalMargin,
+            height - mToggleVerticalMargin,
+            (2) / 2f,
+            (2) / 2f,
             mBackgroundFillPaint
         )
         canvas?.drawRoundRect(
-            10f,
-            10f,
-            width - 10f,
-            height - 10f,
-            (height - 20f) / 2f,
-            (height - 20f) / 2f,
+            mToggleHorizontalMargin,
+            mToggleVerticalMargin,
+            width - mToggleHorizontalMargin,
+            height - mToggleVerticalMargin,
+            (2) / 2f,
+            (2) / 2f,
             mBackgroundStrokePaint
         )
 
         // thumb
         val maxTextWidth = max(mRightTextMeasuredWidth, mLeftTextMeasuredWidth)
         canvas?.drawRoundRect(
-            45f + 10f,
+            45f + 10f + width * mProgress,
             getPixelFromDp(10f),
-            maxTextWidth + 45f + 40f,
+            maxTextWidth + 45f + 40f + width * mProgress,
             height - getPixelFromDp(10f),
             (height - getPixelFromDp(20f)) / 2f,
             (height - getPixelFromDp(20f)) / 2f,
             mThumbFillPaint
         )
         canvas?.drawRoundRect(
-            45f + 10f,
+            45f + 10f + width * mProgress,
             getPixelFromDp(10f),
-            maxTextWidth + 45f + 40f,
+            maxTextWidth + 45f + 40f + width * mProgress,
             height - getPixelFromDp(10f),
             (height - getPixelFromDp(20f)) / 2f,
             (height - getPixelFromDp(20f)) / 2f,
@@ -156,7 +171,7 @@ class FancyToggle : CompoundButton {
         val specHeight = MeasureSpec.getSize(widthMeasureSpec)
         val specHeightMode = MeasureSpec.getMode(widthMeasureSpec)
 
-        var width = max(mRightTextMeasuredWidth, mLeftTextMeasuredWidth) * 2 + getPixelFromDp(15f) + getPixelFromDp(90f)
+        var width = max(mRightTextMeasuredWidth, mLeftTextMeasuredWidth) * 2 + mToggleHorizontalMargin * 2 + getPixelFromDp(30f)
         var height = getPixelFromDp(30f)
 
         setMeasuredDimension(
@@ -172,8 +187,9 @@ class FancyToggle : CompoundButton {
 
     private var mProgress: Float = 0f
 
+    // from JellyLib !
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (!isEnabled || !isClickable) {
+        if (!isEnabled) {
             return false
         }
 
@@ -187,7 +203,7 @@ class FancyToggle : CompoundButton {
             MotionEvent.ACTION_MOVE -> {
                 val x = event.x
                 //set process
-                setProgress(mProgress + (mLastX - x) / width, true)
+                setProgress(mProgress + (x - mLastX) / width, true)
 
                 mLastX = x
             }
@@ -211,8 +227,11 @@ class FancyToggle : CompoundButton {
         return true
     }
 
-    private lateinit var mCurrentState: ToggleState
+    override fun performClick(): Boolean {
+        return super.performClick()
+    }
 
+    // from JellyLib !
     private fun setProgress(progress: Float, shouldCallListener: Boolean) {
         var tempProgress = progress
 
@@ -230,12 +249,16 @@ class FancyToggle : CompoundButton {
             }
         }
 
+        if(shouldCallListener) {
+            mOnStateChangeListener?.onStateChange(mCurrentState)
+        }
+
         mProgress = tempProgress
         invalidate()
     }
 
     private fun getPixelFromDp(dpToConvert: Float): Float {
-        return dpToConvert * density
+        return dpToConvert * mDensity
     }
 
     // from JellyLib !
