@@ -1,13 +1,19 @@
 package com.demkow.mikolaj.fancytogglelib
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.drawable.Drawable
+import android.support.v4.content.ContextCompat
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewConfiguration
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.CompoundButton
 import kotlin.math.max
 
@@ -36,13 +42,15 @@ class FancyToggle : CompoundButton {
 
     private lateinit var mLeftTextPaint: Paint
     private lateinit var mRightTextPaint: Paint
+    private lateinit var mThumbLeftTextPaint: Paint
+    private lateinit var mThumbRightTextPaint: Paint
     private lateinit var mThumbFillPaint: Paint
     private lateinit var mThumbStrokePaint: Paint
     private lateinit var mBackgroundFillPaint: Paint
     private lateinit var mBackgroundStrokePaint: Paint
 
     private lateinit var mCurrentState: ToggleState
-    private var mOnStateChangeListener: OnStateChangeListener? = null
+    var mOnStateChangeListener: OnStateChangeListener? = null
 
 
     private var mLeftTextColor: Int = DEFAULT_LEFT_TEXT_COLOR
@@ -58,13 +66,35 @@ class FancyToggle : CompoundButton {
     private var mTouchSlop: Int = 0
     private var mClickTimeout: Int = 0
 
-    private var mToggleVerticalMargin: Float = getPixelFromDp(10f)
-    private var mToggleHorizontalMargin: Float = getPixelFromDp(30f)
+    private var mToggleVerticalMargin: Float = 0f
+    private var mToggleHorizontalMargin: Float = 0f
+    private var mThumbVerticalMargin: Float = 0f
+
+    private var mTextSize: Float = 0f
+
+    private var mStartX: Float = 0f
+    private var mStartY: Float = 0f
+    private var mLastX: Float = 0f
+
+    private var mProgress: Float = 0f
+
+    private var mMaxTextWidth: Float = 0f
+
+    private var mThumbHorizontalMargin: Float = 0f
 
     private fun initialization(attrs: AttributeSet? = null) {
         mDensity = context.resources.displayMetrics.density
         mTouchSlop = ViewConfiguration.get(context).scaledTouchSlop
         mClickTimeout = ViewConfiguration.getPressedStateDuration() + ViewConfiguration.getTapTimeout()
+
+        mToggleVerticalMargin = getPixelFromDp(10f)
+        mToggleHorizontalMargin = getPixelFromDp(10f)
+
+        mThumbVerticalMargin = getPixelFromDp(10f)
+        mThumbHorizontalMargin = getPixelFromDp(10f)
+
+
+        mTextSize = getPixelFromDp(22f)
 
         if (attrs != null) {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FancyToggle)
@@ -81,97 +111,147 @@ class FancyToggle : CompoundButton {
             typedArray.recycle()
         }
 
-        mLeftTextPaint = Paint()
+        mLeftTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         mLeftTextPaint.color = mLeftTextColor
-        mLeftTextPaint.textSize = getPixelFromDp(20f)
+        mLeftTextPaint.textSize = mTextSize
         mLeftTextMeasuredWidth = mLeftTextPaint.measureText(mLeftText)
 
-        mRightTextPaint = Paint()
+        mRightTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         mRightTextPaint.color = mRightTextColor
-        mRightTextPaint.textSize = getPixelFromDp(20f)
+        mRightTextPaint.textSize = mTextSize
         mRightTextMeasuredWidth = mRightTextPaint.measureText(mRightText)
 
-        mBackgroundFillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        mThumbLeftTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        mThumbLeftTextPaint.color = Color.WHITE
+        mThumbLeftTextPaint.textSize = mTextSize
+
+        mThumbRightTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        mThumbRightTextPaint.color = Color.WHITE
+        mThumbRightTextPaint.textSize = mTextSize
+
+        mMaxTextWidth = max(mLeftTextMeasuredWidth, mRightTextMeasuredWidth)
+
+        mBackgroundFillPaint = Paint()
+        mBackgroundFillPaint.isAntiAlias = true
         mBackgroundFillPaint.color = Color.WHITE
         mBackgroundFillPaint.style = Paint.Style.FILL
 
-        mBackgroundStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mBackgroundStrokePaint.color = Color.GREEN
-        mBackgroundStrokePaint.strokeWidth = getPixelFromDp(5f)
+        mBackgroundStrokePaint = Paint()
+        mBackgroundStrokePaint.isAntiAlias = true
+        mBackgroundStrokePaint.color = Color.GRAY
+        mBackgroundStrokePaint.strokeWidth = getPixelFromDp(1f)
         mBackgroundStrokePaint.style = Paint.Style.STROKE
 
-        mThumbFillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mThumbFillPaint.color = Color.YELLOW
+        mThumbFillPaint = Paint()
+        mThumbFillPaint.isAntiAlias = true
+        mThumbFillPaint.color = Color.DKGRAY
         mThumbFillPaint.style = Paint.Style.FILL
 
-
-        mThumbStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mThumbStrokePaint.color = Color.RED
-        mThumbStrokePaint.strokeWidth = getPixelFromDp(5f)
+        mThumbStrokePaint = Paint()
+        mThumbStrokePaint.isAntiAlias = true
+        mThumbStrokePaint.color = Color.WHITE
+        mThumbStrokePaint.strokeWidth = getPixelFromDp(1f)
         mThumbStrokePaint.style = Paint.Style.STROKE
-
-        mToggleVerticalMargin = getPixelFromDp(10f)
-        mToggleHorizontalMargin = getPixelFromDp(30f)
 
         mCurrentState = ToggleState.LEFT
     }
 
+
     override fun onDraw(canvas: Canvas?) {
 
-        // background
+        val thumbTop = height / 2 - mTextSize * 1.5f
+        val thumbBottom = height / 2 + mTextSize * 1.5f
+
+        val toggleTop = thumbTop - mThumbVerticalMargin
+        val toggleBottom = thumbBottom + mThumbVerticalMargin
+
+        val thumbWidth = 3 * mMaxTextWidth
+        val progressOffset = (width - 2 * mToggleHorizontalMargin - 2 * mThumbHorizontalMargin - thumbWidth) * mProgress
+
+        val thumbRight = mToggleHorizontalMargin + mThumbHorizontalMargin + thumbWidth + progressOffset
+        val thumbLeft = mToggleHorizontalMargin + mThumbHorizontalMargin + progressOffset
+
+
+        // background can be drawn only once per size change / maybe on bitmap?
         canvas?.drawRoundRect(
             mToggleHorizontalMargin,
-            mToggleVerticalMargin,
+            toggleTop,
             width - mToggleHorizontalMargin,
-            height - mToggleVerticalMargin,
-            (2) / 2f,
-            (2) / 2f,
+            toggleBottom,
+            (height - 2 * mToggleVerticalMargin) / 2f,
+            (height - 2 * mToggleVerticalMargin) / 2f,
             mBackgroundFillPaint
         )
         canvas?.drawRoundRect(
             mToggleHorizontalMargin,
-            mToggleVerticalMargin,
+            toggleTop,
             width - mToggleHorizontalMargin,
-            height - mToggleVerticalMargin,
-            (2) / 2f,
-            (2) / 2f,
+            toggleBottom,
+            (height - 2 * mToggleVerticalMargin) / 2f,
+            (height - 2 * mToggleVerticalMargin) / 2f,
             mBackgroundStrokePaint
         )
 
+        mLeftTextPaint.alpha = (mProgress * 255).toInt()
+        mRightTextPaint.alpha = ((1 - mProgress) * 255).toInt()
+
+        // background text
+        canvas?.drawText(
+            mLeftText,
+            mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth,
+            height / 2f + mTextSize / 2,
+            mLeftTextPaint
+        )
+        canvas?.drawText(
+            mRightText,
+            width - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin,
+            height / 2f + mTextSize / 2,
+            mRightTextPaint
+        )
+
         // thumb
-        val maxTextWidth = max(mRightTextMeasuredWidth, mLeftTextMeasuredWidth)
         canvas?.drawRoundRect(
-            45f + 10f + width * mProgress,
-            getPixelFromDp(10f),
-            maxTextWidth + 45f + 40f + width * mProgress,
-            height - getPixelFromDp(10f),
-            (height - getPixelFromDp(20f)) / 2f,
-            (height - getPixelFromDp(20f)) / 2f,
+            thumbLeft,
+            thumbTop,
+            thumbRight,
+            thumbBottom,
+            (height - mTextSize) / 2f,
+            (height - mTextSize) / 2f,
             mThumbFillPaint
         )
         canvas?.drawRoundRect(
-            45f + 10f + width * mProgress,
-            getPixelFromDp(10f),
-            maxTextWidth + 45f + 40f + width * mProgress,
-            height - getPixelFromDp(10f),
-            (height - getPixelFromDp(20f)) / 2f,
-            (height - getPixelFromDp(20f)) / 2f,
+            thumbLeft,
+            thumbTop,
+            thumbRight,
+            thumbBottom,
+            (height - mTextSize) / 2f,
+            (height - mTextSize) / 2f,
             mThumbStrokePaint
         )
 
 
-        // text
-        canvas?.drawText(mLeftText, 45f + 20, height / 2f, mLeftTextPaint)
-        canvas?.drawText(mRightText, width - mRightTextMeasuredWidth - 45f - 20, height / 2f, mRightTextPaint)
+        mThumbRightTextPaint.alpha = (mProgress * 255).toInt()
+        mThumbLeftTextPaint.alpha = ((1f - mProgress) * 255).toInt()
+
+        // thumb text
+        canvas?.drawText(
+            mLeftText,
+            thumbLeft + mMaxTextWidth,
+            height / 2f + mTextSize / 2,
+            mThumbLeftTextPaint
+        )
+
+        canvas?.drawText(
+            mRightText,
+            thumbLeft + mMaxTextWidth,
+            height / 2f + mTextSize / 2,
+            mThumbRightTextPaint
+        )
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val specWidth = MeasureSpec.getSize(widthMeasureSpec)
-        val specWidthMode = MeasureSpec.getMode(widthMeasureSpec)
-        val specHeight = MeasureSpec.getSize(widthMeasureSpec)
-        val specHeightMode = MeasureSpec.getMode(widthMeasureSpec)
-
-        var width = max(mRightTextMeasuredWidth, mLeftTextMeasuredWidth) * 2 + mToggleHorizontalMargin * 2 + getPixelFromDp(30f)
+        var width =
+            mMaxTextWidth * 2 + mToggleHorizontalMargin * 2 + mThumbHorizontalMargin * 2 + getPixelFromDp(30f)
         var height = getPixelFromDp(30f)
 
         setMeasuredDimension(
@@ -180,12 +260,6 @@ class FancyToggle : CompoundButton {
         )
 
     }
-
-    private var mStartX: Float = 0f
-    private var mStartY: Float = 0f
-    private var mLastX: Float = 0f
-
-    private var mProgress: Float = 0f
 
     // from JellyLib !
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -203,7 +277,10 @@ class FancyToggle : CompoundButton {
             MotionEvent.ACTION_MOVE -> {
                 val x = event.x
                 //set process
-                setProgress(mProgress + (x - mLastX) / width, true)
+                setProgress(
+                    mProgress + (x - mLastX) / (width - 2 * mToggleHorizontalMargin - 2 * mThumbHorizontalMargin - 3 * mMaxTextWidth),
+                    true
+                )
 
                 mLastX = x
             }
@@ -215,7 +292,7 @@ class FancyToggle : CompoundButton {
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mClickTimeout) {
                     performClick()
                 } else {
-                    //move to one side or another
+ //animate
                 }
             }
             else -> {
@@ -234,8 +311,9 @@ class FancyToggle : CompoundButton {
     // from JellyLib !
     private fun setProgress(progress: Float, shouldCallListener: Boolean) {
         var tempProgress = progress
+        Log.d("progress", progress.toString())
 
-        if (tempProgress >= 1) {
+        if (tempProgress >= 1f) {
             tempProgress = 1f
             mCurrentState = ToggleState.RIGHT
         } else if (tempProgress <= 0) {
@@ -249,7 +327,7 @@ class FancyToggle : CompoundButton {
             }
         }
 
-        if(shouldCallListener) {
+        if (shouldCallListener) {
             mOnStateChangeListener?.onStateChange(mCurrentState)
         }
 
