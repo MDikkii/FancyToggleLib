@@ -21,6 +21,7 @@ import kotlin.math.max
 class FancyToggle : CompoundButton {
     interface OnStateChangeListener {
         fun onStateChange(state: ToggleState)
+        fun onColorUpdate(midColor: Int)
     }
 
     constructor(context: Context?) : super(context) {
@@ -56,6 +57,9 @@ class FancyToggle : CompoundButton {
     private var mLeftTextColor: Int = DEFAULT_LEFT_TEXT_COLOR
     private var mRightTextColor: Int = DEFAULT_RIGHT_TEXT_COLOR
 
+    private var mLeftThumbColor: Int = Color.rgb(130, 195, 49)
+    private var mRightThumbColor: Int = Color.rgb(255, 160, 0)
+
     private var mLeftText: String = DEFAULT_LEFT_TEXT
     private var mRightText: String = DEFAULT_RIGHT_TEXT
 
@@ -69,6 +73,12 @@ class FancyToggle : CompoundButton {
     private var mToggleVerticalMargin: Float = 0f
     private var mToggleHorizontalMargin: Float = 0f
     private var mThumbVerticalMargin: Float = 0f
+
+    private var mLeftDrawable: Drawable? = null
+    private var mRightDrawable: Drawable? = null
+    private var mLeftThumbDrawable: Drawable? = null
+    private var mRightThumbDrawable: Drawable? = null
+
 
     private var mTextSize: Float = 0f
 
@@ -92,6 +102,12 @@ class FancyToggle : CompoundButton {
 
         mThumbVerticalMargin = getPixelFromDp(10f)
         mThumbHorizontalMargin = getPixelFromDp(10f)
+
+        mLeftDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite)
+        mRightDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_border)
+
+        mLeftThumbDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_white)
+        mRightThumbDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_border_white)
 
 
         mTextSize = getPixelFromDp(22f)
@@ -144,7 +160,6 @@ class FancyToggle : CompoundButton {
 
         mThumbFillPaint = Paint()
         mThumbFillPaint.isAntiAlias = true
-        mThumbFillPaint.color = Color.DKGRAY
         mThumbFillPaint.style = Paint.Style.FILL
 
         mThumbStrokePaint = Paint()
@@ -196,6 +211,29 @@ class FancyToggle : CompoundButton {
         mRightTextPaint.alpha = ((1 - mProgress) * 255).toInt()
 
         // background text
+
+        mLeftDrawable?.setBounds(
+            (mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth - getPixelFromDp(
+                48f
+            )).toInt(),
+            thumbTop.toInt(),
+            (mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth).toInt(),
+            thumbBottom.toInt()
+        )
+        mLeftDrawable?.alpha = (mProgress * 255).toInt()
+        mLeftDrawable?.draw(canvas!!)
+
+        mRightDrawable?.setBounds(
+            (width - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin - getPixelFromDp(
+                48f
+            )).toInt(),
+            thumbTop.toInt(),
+            (width - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin ).toInt(),
+            thumbBottom.toInt()
+        )
+        mRightDrawable?.alpha = ((1 - mProgress) * 255).toInt()
+        mRightDrawable?.draw(canvas!!)
+
         canvas?.drawText(
             mLeftText,
             mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth,
@@ -208,6 +246,12 @@ class FancyToggle : CompoundButton {
             height / 2f + mTextSize / 2,
             mRightTextPaint
         )
+
+
+        val midColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
+        mThumbFillPaint.color = midColor
+        mThumbStrokePaint.color = midColor
+        mOnStateChangeListener?.onColorUpdate(midColor)
 
         // thumb
         canvas?.drawRoundRect(
@@ -232,6 +276,24 @@ class FancyToggle : CompoundButton {
 
         mThumbRightTextPaint.alpha = (mProgress * 255).toInt()
         mThumbLeftTextPaint.alpha = ((1f - mProgress) * 255).toInt()
+//
+        mLeftThumbDrawable?.setBounds(
+            (thumbLeft + mMaxTextWidth - getPixelFromDp(48f)).toInt(),
+            thumbTop.toInt(),
+            (thumbLeft + mMaxTextWidth).toInt(),
+            thumbBottom.toInt()
+        )
+        mLeftThumbDrawable?.alpha = ((1f - mProgress) * 255).toInt()
+        mLeftThumbDrawable?.draw(canvas!!)
+
+        mRightThumbDrawable?.setBounds(
+            (thumbLeft + mMaxTextWidth - getPixelFromDp(48f)).toInt(),
+            thumbTop.toInt(),
+            (thumbLeft + mMaxTextWidth).toInt(),
+            thumbBottom.toInt()
+        )
+        mRightThumbDrawable?.alpha = ((mProgress) * 255).toInt()
+        mRightThumbDrawable?.draw(canvas!!)
 
         // thumb text
         canvas?.drawText(
@@ -250,6 +312,11 @@ class FancyToggle : CompoundButton {
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val specWidth = MeasureSpec.getSize(widthMeasureSpec)
+        val specWidthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val specHeight = MeasureSpec.getSize(widthMeasureSpec)
+        val specHeightMode = MeasureSpec.getMode(widthMeasureSpec)
+
         var width =
             mMaxTextWidth * 2 + mToggleHorizontalMargin * 2 + mThumbHorizontalMargin * 2 + getPixelFromDp(30f)
         var height = getPixelFromDp(30f)
@@ -292,7 +359,7 @@ class FancyToggle : CompoundButton {
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mClickTimeout) {
                     performClick()
                 } else {
- //animate
+                    animateToggle(mCurrentState, true)
                 }
             }
             else -> {
@@ -306,6 +373,46 @@ class FancyToggle : CompoundButton {
 
     override fun performClick(): Boolean {
         return super.performClick()
+    }
+
+    private  var mProgressAnimator: ValueAnimator? = null
+
+    fun animateToggle(state: ToggleState, reset: Boolean){
+
+        if(mProgressAnimator?.isRunning == true) {
+            return
+        }
+
+        setProgressAnimator(state)
+
+        mProgressAnimator?.duration = 1000L
+
+        mProgressAnimator?.start()
+    }
+
+    private fun setProgressAnimator(state: ToggleState) {
+        val endValue = when(state) {
+            ToggleState.LEFT, ToggleState.RIGHT_TO_LEFT -> 0f
+            ToggleState.RIGHT, ToggleState.LEFT_TO_RIGHT -> 1f
+        }
+        mProgressAnimator = ValueAnimator.ofFloat(mProgress, endValue)
+        mProgressAnimator?.addUpdateListener { animation ->
+            setProgress(
+                animation.animatedValue as Float,
+                true
+            )
+        }
+        mProgressAnimator?.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                isChecked = when(mProgress) {
+                    0f -> true
+                    1f -> false
+                    else -> false
+                }
+                super.onAnimationEnd(animation)
+            }
+        })
+        mProgressAnimator?.interpolator = AccelerateDecelerateInterpolator()
     }
 
     // from JellyLib !
@@ -343,6 +450,17 @@ class FancyToggle : CompoundButton {
     private fun catchView() {
         val parent = parent
         parent?.requestDisallowInterceptTouchEvent(true)
+    }
+
+    // from JellyLib !
+    private fun calculateMidColor(leftColor: Int, rightColor: Int, progress: Float): Int {
+        return Color.argb(
+            Color.alpha(leftColor) + ((Color.alpha(rightColor) - Color.alpha(leftColor)) * progress).toInt(),
+            Color.red(leftColor) + ((Color.red(rightColor) - Color.red(leftColor)) * progress).toInt(),
+            Color.green(leftColor) + ((Color.green(rightColor) - Color.green(leftColor)) * progress).toInt(),
+            Color.blue(leftColor) + ((Color.blue(rightColor) - Color.blue(leftColor)) * progress).toInt()
+        )
+
     }
 
     companion object {
