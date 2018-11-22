@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable
 import android.support.v4.content.ContextCompat
 import android.util.AttributeSet
 import android.util.Log
+import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -50,21 +51,26 @@ class FancyToggle : CompoundButton {
     private lateinit var mBackgroundFillPaint: Paint
     private lateinit var mBackgroundStrokePaint: Paint
 
-    private lateinit var mCurrentState: ToggleState
     var mOnStateChangeListener: OnStateChangeListener? = null
 
+    private var mLeftDrawable: Drawable? = null
+    private var mRightDrawable: Drawable? = null
+    private var mLeftThumbDrawable: Drawable? = null
+    private var mRightThumbDrawable: Drawable? = null
 
-    private var mLeftTextColor: Int = DEFAULT_LEFT_TEXT_COLOR
-    private var mRightTextColor: Int = DEFAULT_RIGHT_TEXT_COLOR
+    private var mProgressAnimator: ValueAnimator? = null
 
-    private var mLeftThumbColor: Int = Color.rgb(130, 195, 49)
-    private var mRightThumbColor: Int = Color.rgb(255, 160, 0)
+    private lateinit var mCurrentState: ToggleState
 
     private var mLeftText: String = DEFAULT_LEFT_TEXT
     private var mRightText: String = DEFAULT_RIGHT_TEXT
+    private var mLeftTextColor: Int = DEFAULT_LEFT_TEXT_COLOR
+    private var mRightTextColor: Int = DEFAULT_RIGHT_TEXT_COLOR
+    private var mTextSize: Float = 0f
 
     private var mRightTextMeasuredWidth: Float = 0f
     private var mLeftTextMeasuredWidth: Float = 0f
+    private var mMaxTextWidth: Float = 0f
 
     private var mDensity: Float = 1f
     private var mTouchSlop: Int = 0
@@ -72,25 +78,18 @@ class FancyToggle : CompoundButton {
 
     private var mToggleVerticalMargin: Float = 0f
     private var mToggleHorizontalMargin: Float = 0f
+
     private var mThumbVerticalMargin: Float = 0f
-
-    private var mLeftDrawable: Drawable? = null
-    private var mRightDrawable: Drawable? = null
-    private var mLeftThumbDrawable: Drawable? = null
-    private var mRightThumbDrawable: Drawable? = null
-
-
-    private var mTextSize: Float = 0f
+    private var mThumbHorizontalMargin: Float = 0f
+    private var mThumbAnimationDuration: Long = DEFAULT_THUMB_ANIMATION_TIME
+    private var mLeftThumbColor: Int = Color.RED
+    private var mRightThumbColor: Int = Color.GREEN
 
     private var mStartX: Float = 0f
     private var mStartY: Float = 0f
     private var mLastX: Float = 0f
 
     private var mProgress: Float = 0f
-
-    private var mMaxTextWidth: Float = 0f
-
-    private var mThumbHorizontalMargin: Float = 0f
 
     private fun initialization(attrs: AttributeSet? = null) {
         mDensity = context.resources.displayMetrics.density
@@ -109,8 +108,7 @@ class FancyToggle : CompoundButton {
         mLeftThumbDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_white)
         mRightThumbDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_border_white)
 
-
-        mTextSize = getPixelFromDp(22f)
+        mTextSize = getPixelFromSp(16f)
 
         if (attrs != null) {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FancyToggle)
@@ -122,7 +120,6 @@ class FancyToggle : CompoundButton {
             mRightTextColor =
                     typedArray.getColor(R.styleable.FancyToggle_fancyToggleLeftTextColor, DEFAULT_RIGHT_TEXT_COLOR)
             mRightText = typedArray.getString(R.styleable.FancyToggle_fancyToggleRightText) ?: DEFAULT_RIGHT_TEXT
-
 
             typedArray.recycle()
         }
@@ -172,43 +169,131 @@ class FancyToggle : CompoundButton {
     }
 
 
+    private fun drawBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float) {
+        // background can be drawn only once per size change / maybe on bitmap?
+        drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundFillPaint)
+        drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundStrokePaint)
+    }
+
+    private fun drawToggleBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float, paint: Paint) {
+        canvas?.drawRoundRect(
+            mToggleHorizontalMargin,
+            toggleTop,
+            mWidthWithPadding - mToggleHorizontalMargin,
+            toggleBottom,
+            (mHeightWithPadding - 2 * mToggleVerticalMargin) / 2f,
+            (mHeightWithPadding - 2 * mToggleVerticalMargin) / 2f,
+            paint
+        )
+    }
+
+    private var mHeightWithPadding: Int = 0
+    private var mWidthWithPadding: Int = 0
+
     override fun onDraw(canvas: Canvas?) {
 
-        val thumbTop = height / 2 - mTextSize * 1.5f
-        val thumbBottom = height / 2 + mTextSize * 1.5f
+        mHeightWithPadding = height - paddingBottom - paddingTop
+        mWidthWithPadding = width - paddingStart - paddingLeft
+
+        val thumbTop = mHeightWithPadding / 2 - mTextSize * 1.5f
+        val thumbBottom = mHeightWithPadding / 2 + mTextSize * 1.5f
+        val thumbWidth = 2.2f * mMaxTextWidth
+        val progressOffset = (mWidthWithPadding - 2 * mToggleHorizontalMargin - 2 * mThumbHorizontalMargin - thumbWidth) * mProgress
+        val thumbRight = mToggleHorizontalMargin + mThumbHorizontalMargin + thumbWidth + progressOffset
+        val thumbLeft = mToggleHorizontalMargin + mThumbHorizontalMargin + progressOffset
 
         val toggleTop = thumbTop - mThumbVerticalMargin
         val toggleBottom = thumbBottom + mThumbVerticalMargin
 
-        val thumbWidth = 3 * mMaxTextWidth
-        val progressOffset = (width - 2 * mToggleHorizontalMargin - 2 * mThumbHorizontalMargin - thumbWidth) * mProgress
+        drawBackground(canvas, toggleTop, toggleBottom)
+        drawBackgroundTextAndIcons(thumbTop, thumbBottom, canvas)
+        drawThumb(canvas, thumbLeft, thumbTop, thumbRight, thumbBottom)
+    }
 
-        val thumbRight = mToggleHorizontalMargin + mThumbHorizontalMargin + thumbWidth + progressOffset
-        val thumbLeft = mToggleHorizontalMargin + mThumbHorizontalMargin + progressOffset
+    private fun getAlphaFromProgress() = (mProgress * 255).toInt()
+    private fun getAlphaFromReverseProgress() = 255 - getAlphaFromProgress()
 
+    private fun drawThumb(
+        canvas: Canvas?,
+        thumbLeft: Float,
+        thumbTop: Float,
+        thumbRight: Float,
+        thumbBottom: Float
+    ) {
+        val midColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
+        mThumbFillPaint.color = midColor
+        mThumbStrokePaint.color = midColor
+        mOnStateChangeListener?.onColorUpdate(midColor)
 
-        // background can be drawn only once per size change / maybe on bitmap?
+        val progressAlpha = getAlphaFromProgress()
+        val reverseProgressAlpha = getAlphaFromReverseProgress()
+
         canvas?.drawRoundRect(
-            mToggleHorizontalMargin,
-            toggleTop,
-            width - mToggleHorizontalMargin,
-            toggleBottom,
-            (height - 2 * mToggleVerticalMargin) / 2f,
-            (height - 2 * mToggleVerticalMargin) / 2f,
-            mBackgroundFillPaint
+            thumbLeft,
+            thumbTop,
+            thumbRight,
+            thumbBottom,
+            (mHeightWithPadding - mTextSize) / 2f,
+            (mHeightWithPadding - mTextSize) / 2f,
+            mThumbFillPaint
         )
         canvas?.drawRoundRect(
-            mToggleHorizontalMargin,
-            toggleTop,
-            width - mToggleHorizontalMargin,
-            toggleBottom,
-            (height - 2 * mToggleVerticalMargin) / 2f,
-            (height - 2 * mToggleVerticalMargin) / 2f,
-            mBackgroundStrokePaint
+            thumbLeft,
+            thumbTop,
+            thumbRight,
+            thumbBottom,
+            (mHeightWithPadding - mTextSize) / 2f,
+            (mHeightWithPadding - mTextSize) / 2f,
+            mThumbStrokePaint
         )
 
-        mLeftTextPaint.alpha = (mProgress * 255).toInt()
-        mRightTextPaint.alpha = ((1 - mProgress) * 255).toInt()
+
+        mThumbRightTextPaint.alpha = progressAlpha
+        mThumbLeftTextPaint.alpha = reverseProgressAlpha
+        mLeftThumbDrawable?.setBounds(
+            (thumbLeft + mMaxTextWidth - getPixelFromDp(48f)).toInt(),
+            thumbTop.toInt(),
+            (thumbLeft + mMaxTextWidth).toInt(),
+            thumbBottom.toInt()
+        )
+        mLeftThumbDrawable?.alpha = reverseProgressAlpha
+        mLeftThumbDrawable?.draw(canvas!!)
+
+        mRightThumbDrawable?.setBounds(
+            (thumbLeft + mMaxTextWidth - getPixelFromDp(48f)).toInt(),
+            thumbTop.toInt(),
+            (thumbLeft + mMaxTextWidth).toInt(),
+            thumbBottom.toInt()
+        )
+        mRightThumbDrawable?.alpha = progressAlpha
+        mRightThumbDrawable?.draw(canvas!!)
+
+        // thumb text
+        canvas?.drawText(
+            mLeftText,
+            thumbLeft + mMaxTextWidth,
+            mHeightWithPadding / 2f + mTextSize / 2,
+            mThumbLeftTextPaint
+        )
+
+        canvas?.drawText(
+            mRightText,
+            thumbLeft + mMaxTextWidth,
+            mHeightWithPadding / 2f + mTextSize / 2,
+            mThumbRightTextPaint
+        )
+    }
+
+    private fun drawBackgroundTextAndIcons(
+        thumbTop: Float,
+        thumbBottom: Float,
+        canvas: Canvas?
+    ) {
+        val progressAlpha = getAlphaFromProgress()
+        val reverseProgressAlpha = getAlphaFromReverseProgress()
+
+        mLeftTextPaint.alpha = progressAlpha
+        mRightTextPaint.alpha = reverseProgressAlpha
 
         // background text
 
@@ -220,18 +305,18 @@ class FancyToggle : CompoundButton {
             (mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth).toInt(),
             thumbBottom.toInt()
         )
-        mLeftDrawable?.alpha = (mProgress * 255).toInt()
+        mLeftDrawable?.alpha = progressAlpha
         mLeftDrawable?.draw(canvas!!)
 
         mRightDrawable?.setBounds(
-            (width - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin - getPixelFromDp(
+            (mWidthWithPadding - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin - getPixelFromDp(
                 48f
             )).toInt(),
             thumbTop.toInt(),
-            (width - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin ).toInt(),
+            (mWidthWithPadding - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin).toInt(),
             thumbBottom.toInt()
         )
-        mRightDrawable?.alpha = ((1 - mProgress) * 255).toInt()
+        mRightDrawable?.alpha = reverseProgressAlpha
         mRightDrawable?.draw(canvas!!)
 
         canvas?.drawText(
@@ -242,84 +327,16 @@ class FancyToggle : CompoundButton {
         )
         canvas?.drawText(
             mRightText,
-            width - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin,
+            mWidthWithPadding - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin,
             height / 2f + mTextSize / 2,
             mRightTextPaint
-        )
-
-
-        val midColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
-        mThumbFillPaint.color = midColor
-        mThumbStrokePaint.color = midColor
-        mOnStateChangeListener?.onColorUpdate(midColor)
-
-        // thumb
-        canvas?.drawRoundRect(
-            thumbLeft,
-            thumbTop,
-            thumbRight,
-            thumbBottom,
-            (height - mTextSize) / 2f,
-            (height - mTextSize) / 2f,
-            mThumbFillPaint
-        )
-        canvas?.drawRoundRect(
-            thumbLeft,
-            thumbTop,
-            thumbRight,
-            thumbBottom,
-            (height - mTextSize) / 2f,
-            (height - mTextSize) / 2f,
-            mThumbStrokePaint
-        )
-
-
-        mThumbRightTextPaint.alpha = (mProgress * 255).toInt()
-        mThumbLeftTextPaint.alpha = ((1f - mProgress) * 255).toInt()
-//
-        mLeftThumbDrawable?.setBounds(
-            (thumbLeft + mMaxTextWidth - getPixelFromDp(48f)).toInt(),
-            thumbTop.toInt(),
-            (thumbLeft + mMaxTextWidth).toInt(),
-            thumbBottom.toInt()
-        )
-        mLeftThumbDrawable?.alpha = ((1f - mProgress) * 255).toInt()
-        mLeftThumbDrawable?.draw(canvas!!)
-
-        mRightThumbDrawable?.setBounds(
-            (thumbLeft + mMaxTextWidth - getPixelFromDp(48f)).toInt(),
-            thumbTop.toInt(),
-            (thumbLeft + mMaxTextWidth).toInt(),
-            thumbBottom.toInt()
-        )
-        mRightThumbDrawable?.alpha = ((mProgress) * 255).toInt()
-        mRightThumbDrawable?.draw(canvas!!)
-
-        // thumb text
-        canvas?.drawText(
-            mLeftText,
-            thumbLeft + mMaxTextWidth,
-            height / 2f + mTextSize / 2,
-            mThumbLeftTextPaint
-        )
-
-        canvas?.drawText(
-            mRightText,
-            thumbLeft + mMaxTextWidth,
-            height / 2f + mTextSize / 2,
-            mThumbRightTextPaint
         )
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val specWidth = MeasureSpec.getSize(widthMeasureSpec)
-        val specWidthMode = MeasureSpec.getMode(widthMeasureSpec)
-        val specHeight = MeasureSpec.getSize(widthMeasureSpec)
-        val specHeightMode = MeasureSpec.getMode(widthMeasureSpec)
-
         var width =
-            mMaxTextWidth * 2 + mToggleHorizontalMargin * 2 + mThumbHorizontalMargin * 2 + getPixelFromDp(30f)
-        var height = getPixelFromDp(30f)
+            paddingStart + paddingEnd  +  mMaxTextWidth * 2 + mToggleHorizontalMargin * 2 + mThumbHorizontalMargin * 2 + getPixelFromDp(30f)
+        var height = getPixelFromDp(30f) + paddingTop + paddingBottom
 
         setMeasuredDimension(
             resolveSize(width.toInt(), widthMeasureSpec),
@@ -345,7 +362,7 @@ class FancyToggle : CompoundButton {
                 val x = event.x
                 //set process
                 setProgress(
-                    mProgress + (x - mLastX) / (width - 2 * mToggleHorizontalMargin - 2 * mThumbHorizontalMargin - 3 * mMaxTextWidth),
+                    mProgress + (x - mLastX) / (mWidthWithPadding - 2 * mToggleHorizontalMargin - 2 * mThumbHorizontalMargin - 3 * mMaxTextWidth),
                     true
                 )
 
@@ -359,6 +376,14 @@ class FancyToggle : CompoundButton {
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mClickTimeout) {
                     performClick()
                 } else {
+                    mCurrentState = when {
+                        mProgress <= 0 -> ToggleState.LEFT
+                        mProgress > 0 && mProgress <= 0.5f -> ToggleState.RIGHT_TO_LEFT
+                        mProgress < 1 && mProgress > 0.5f -> ToggleState.LEFT_TO_RIGHT
+                        mProgress >= 1 -> ToggleState.RIGHT
+                        else -> ToggleState.LEFT
+                    }
+
                     animateToggle(mCurrentState, true)
                 }
             }
@@ -371,27 +396,41 @@ class FancyToggle : CompoundButton {
         return true
     }
 
+    override fun setChecked(checked: Boolean) {
+        if (!::mCurrentState.isInitialized) {
+            mCurrentState = ToggleState.LEFT
+        }
+
+        if (mProgressAnimator?.isRunning == true) {
+            return
+        }
+        super.setChecked(checked)
+
+        mCurrentState = if (checked) {
+            ToggleState.RIGHT
+        } else {
+            ToggleState.LEFT
+        }
+
+        animateToggle(mCurrentState, true)
+    }
+
     override fun performClick(): Boolean {
         return super.performClick()
     }
 
-    private  var mProgressAnimator: ValueAnimator? = null
+    fun animateToggle(state: ToggleState, reset: Boolean) {
 
-    fun animateToggle(state: ToggleState, reset: Boolean){
-
-        if(mProgressAnimator?.isRunning == true) {
+        if (mProgressAnimator?.isRunning == true) {
             return
         }
 
         setProgressAnimator(state)
-
-        mProgressAnimator?.duration = 1000L
-
         mProgressAnimator?.start()
     }
 
     private fun setProgressAnimator(state: ToggleState) {
-        val endValue = when(state) {
+        val endValue = when (state) {
             ToggleState.LEFT, ToggleState.RIGHT_TO_LEFT -> 0f
             ToggleState.RIGHT, ToggleState.LEFT_TO_RIGHT -> 1f
         }
@@ -404,15 +443,23 @@ class FancyToggle : CompoundButton {
         }
         mProgressAnimator?.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
-                isChecked = when(mProgress) {
-                    0f -> true
-                    1f -> false
+                val checked = when (mProgress) {
+                    0f -> false
+                    1f -> true
                     else -> false
                 }
+                super@FancyToggle.setChecked(checked)
                 super.onAnimationEnd(animation)
             }
         })
         mProgressAnimator?.interpolator = AccelerateDecelerateInterpolator()
+        mProgressAnimator?.duration = when (state) {
+            ToggleState.LEFT, ToggleState.RIGHT -> mThumbAnimationDuration
+            ToggleState.LEFT_TO_RIGHT -> (mThumbAnimationDuration * (1 - mProgress)).toLong()
+            ToggleState.RIGHT_TO_LEFT -> (mThumbAnimationDuration * mProgress).toLong()
+        }
+
+        Log.d("status and duration", state.name + " " + mProgressAnimator?.duration)
     }
 
     // from JellyLib !
@@ -446,6 +493,10 @@ class FancyToggle : CompoundButton {
         return dpToConvert * mDensity
     }
 
+    private fun getPixelFromSp(spToConvert: Float): Float {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, spToConvert, context.resources.displayMetrics)
+    }
+
     // from JellyLib !
     private fun catchView() {
         val parent = parent
@@ -466,7 +517,8 @@ class FancyToggle : CompoundButton {
     companion object {
         private const val DEFAULT_LEFT_TEXT_COLOR: Int = Color.BLACK
         private const val DEFAULT_RIGHT_TEXT_COLOR: Int = Color.BLACK
-        private const val DEFAULT_RIGHT_TEXT = "Offline"
+        private const val DEFAULT_RIGHT_TEXT = "Gebt acht"
         private const val DEFAULT_LEFT_TEXT = "Online"
+        private const val DEFAULT_THUMB_ANIMATION_TIME = 600L
     }
 }
