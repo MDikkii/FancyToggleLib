@@ -90,6 +90,7 @@ class FancyToggle : CompoundButton {
     private var mLastX: Float = 0f
 
     private var mProgress: Float = 0f
+    private var mFontHeight: Float = 0f
 
     private fun initialization(attrs: AttributeSet? = null) {
         mDensity = context.resources.displayMetrics.density
@@ -165,6 +166,8 @@ class FancyToggle : CompoundButton {
         mThumbStrokePaint.strokeWidth = getPixelFromDp(1f)
         mThumbStrokePaint.style = Paint.Style.STROKE
 
+        mFontHeight = -mLeftTextPaint.fontMetrics.top + mLeftTextPaint.fontMetrics.bottom
+
         mCurrentState = ToggleState.LEFT
     }
 
@@ -177,9 +180,9 @@ class FancyToggle : CompoundButton {
 
     private fun drawToggleBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float, paint: Paint) {
         canvas?.drawRoundRect(
-            mToggleHorizontalMargin,
+            paddingStart.toFloat(),
             toggleTop,
-            mWidthWithPadding - mToggleHorizontalMargin,
+            width - paddingEnd.toFloat(),
             toggleBottom,
             (mHeightWithPadding - 2 * mToggleVerticalMargin) / 2f,
             (mHeightWithPadding - 2 * mToggleVerticalMargin) / 2f,
@@ -272,14 +275,14 @@ class FancyToggle : CompoundButton {
         canvas?.drawText(
             mLeftText,
             thumbLeft + mMaxTextWidth,
-            mHeightWithPadding / 2f + mTextSize / 2,
+            mHeightWithPadding / 2f + mFontHeight / 2,
             mThumbLeftTextPaint
         )
 
         canvas?.drawText(
             mRightText,
             thumbLeft + mMaxTextWidth,
-            mHeightWithPadding / 2f + mTextSize / 2,
+            mHeightWithPadding / 2f + mFontHeight / 2,
             mThumbRightTextPaint
         )
     }
@@ -298,22 +301,22 @@ class FancyToggle : CompoundButton {
         // background text
 
         mLeftDrawable?.setBounds(
-            (mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth - getPixelFromDp(
+            (mToggleHorizontalMargin + mThumbHorizontalMargin * 2 + mLeftTextMeasuredWidth - getPixelFromDp(
                 48f
             )).toInt(),
             thumbTop.toInt(),
-            (mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth).toInt(),
+            (mToggleHorizontalMargin + mThumbHorizontalMargin * 2 + mLeftTextMeasuredWidth).toInt(),
             thumbBottom.toInt()
         )
         mLeftDrawable?.alpha = progressAlpha
         mLeftDrawable?.draw(canvas!!)
 
         mRightDrawable?.setBounds(
-            (mWidthWithPadding - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin - getPixelFromDp(
+            (mWidthWithPadding -  mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin * 2 - getPixelFromDp(
                 48f
             )).toInt(),
             thumbTop.toInt(),
-            (mWidthWithPadding - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin).toInt(),
+            (mWidthWithPadding -  mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin * 2).toInt(),
             thumbBottom.toInt()
         )
         mRightDrawable?.alpha = reverseProgressAlpha
@@ -321,22 +324,22 @@ class FancyToggle : CompoundButton {
 
         canvas?.drawText(
             mLeftText,
-            mToggleHorizontalMargin + mThumbHorizontalMargin + mLeftTextMeasuredWidth,
-            height / 2f + mTextSize / 2,
+            mToggleHorizontalMargin + mThumbHorizontalMargin * 2 + mLeftTextMeasuredWidth,
+            height / 2f + mFontHeight / 3,
             mLeftTextPaint
         )
         canvas?.drawText(
             mRightText,
-            mWidthWithPadding - 2 * mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin,
-            height / 2f + mTextSize / 2,
+            width - mRightTextMeasuredWidth - mToggleHorizontalMargin - mThumbHorizontalMargin * 2,
+            height / 2f + mFontHeight / 3,
             mRightTextPaint
         )
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        var width =
-            paddingStart + paddingEnd  +  mMaxTextWidth * 2 + mToggleHorizontalMargin * 2 + mThumbHorizontalMargin * 2 + getPixelFromDp(30f)
-        var height = getPixelFromDp(30f) + paddingTop + paddingBottom
+        val width =
+            paddingStart + paddingEnd  +  mMaxTextWidth * 5  + mThumbHorizontalMargin * 2
+        val height =   paddingTop + paddingBottom
 
         setMeasuredDimension(
             resolveSize(width.toInt(), widthMeasureSpec),
