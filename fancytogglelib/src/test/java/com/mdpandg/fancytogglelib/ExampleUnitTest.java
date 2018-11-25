@@ -1,4 +1,4 @@
-package com.demkow.mikolaj.fancytogglelib;
+package com.mdpandg.fancytogglelib;
 
 import org.junit.Test;
 

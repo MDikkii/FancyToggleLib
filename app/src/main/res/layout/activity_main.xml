@@ -15,7 +15,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.demkow.mikolaj.fancytogglelib.FancyToggle
+    <com.mdpandg.fancytogglelib.FancyToggle
         android:id="@+id/fancytoggle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

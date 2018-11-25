@@ -1,12 +1,16 @@
-package com.demkow.mikolaj.fancytoggle
+package com.mdpandg.fancytoggle
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import com.demkow.mikolaj.fancytogglelib.FancyToggle
-import com.demkow.mikolaj.fancytogglelib.ToggleState
+import com.mdpandg.fancytogglelib.FancyToggle
+import com.mdpandg.fancytogglelib.ToggleState
 import kotlinx.android.synthetic.main.activity_main.*
 
+/**
+ *  Copyright 2018 MDP&G Mikołaj Demków
+ *  Licensed under the Apache License, Version 2.0 (see LICENSE.md)
+ */
 
 class MainActivity : AppCompatActivity() {
 

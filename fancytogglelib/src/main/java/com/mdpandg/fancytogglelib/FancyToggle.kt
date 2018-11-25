@@ -1,4 +1,4 @@
-package com.demkow.mikolaj.fancytogglelib
+package com.mdpandg.fancytogglelib
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -18,6 +18,22 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.CompoundButton
 import kotlin.math.max
 
+
+/**
+ *  Copyright 2018 MDP&G Mikołaj Demków
+ *  Copyright 2016/5/10 Weiping
+ *  Licensed under the Apache License, Version 2.0 (see LICENSE.md)
+ *
+ *  FancyToggleLib uses some part from: JellyToggleButton
+ *  JellyToggleButton is an open source, you can check it out here: https://github.com/Nightonke/JellyToggleButton
+ *
+ *  As JellyToggleButton is opened under Apache 2.0 license there is change log:
+ *  Removed whole code except listed below:
+ *  calculateMidColor method from ToggleUtil.java - translated to Kotlin, moved to FancyToggle.kt
+ *  onTouchEvent - translated to Kotlin, changed to FancyToggleLib needs
+ *  setProgress - translated to Kotlin, changed to FancyToggleLib needs
+ *
+ *  */
 
 class FancyToggle : CompoundButton {
     interface OnStateChangeListener {
@@ -433,9 +449,10 @@ class FancyToggle : CompoundButton {
             return false
         }
 
+        parent.requestDisallowInterceptTouchEvent(true)
+
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
-                catchView()
                 mStartX = event.x
                 mStartY = event.y
                 mLastX = mStartX
@@ -455,8 +472,6 @@ class FancyToggle : CompoundButton {
                 val deltaY = event.y - mStartY
                 val deltaTime = event.eventTime - event.downTime
 
-
-
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout) {
                     performClick()
                 } else {
@@ -469,6 +484,7 @@ class FancyToggle : CompoundButton {
                     }
 
                     animateToggle(mCurrentState)
+                    parent.requestDisallowInterceptTouchEvent(false)
                 }
             }
             else -> {
@@ -576,12 +592,6 @@ class FancyToggle : CompoundButton {
 
     private fun getPixelFromSp(spToConvert: Float): Float {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, spToConvert, context.resources.displayMetrics)
-    }
-
-    // from JellyLib !
-    private fun catchView() {
-        val parent = parent
-        parent?.requestDisallowInterceptTouchEvent(true)
     }
 
     // from JellyLib !
