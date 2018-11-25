@@ -1,6 +1,40 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
+buildscript {
+    ext {
+        bintrayRepo = 'maven'
+        bintrayName = 'FancyToggleLib'
+
+        publishedGroupId = 'com.mdpandg.fancytogglelib'
+        libraryName = 'FancyToggleLib'
+        artifact = 'fancytogglelib'
+
+        libraryDescription = 'Custom toggle switch'
+
+        siteUrl = 'https://github.com/MDikkii/FancyToggleLib'
+        gitUrl = 'https://github.com/MDikkii/FancyToggleLib.git'
+
+        libraryVersion = '1.0.0'
+
+        developerId = 'mdp&g'
+        developerName = 'Mikolaj Demkow'
+        developerEmail = ''
+
+        licenseName = 'The Apache Software License, Version 2.0'
+        licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+        allLicenses = ["Apache-2.0"]
+    }
+
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
+}
+
 android {
     compileSdkVersion 28
 
@@ -38,3 +72,8 @@ dependencies {
 repositories {
     mavenCentral()
 }
+
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+apply from: 'bintrayscript.gradle'
