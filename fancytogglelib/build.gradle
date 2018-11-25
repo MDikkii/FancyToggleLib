@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 
 buildscript {
     ext {
-        bintrayRepo = 'maven'
+        bintrayRepo = 'FancyToggleLib'
         bintrayName = 'FancyToggleLib'
 
         publishedGroupId = 'com.mdpandg.fancytogglelib'
@@ -71,6 +71,10 @@ dependencies {
 }
 repositories {
     mavenCentral()
+}
+
+tasks.withType(Javadoc).all {
+    enabled = false
 }
 
 apply plugin: 'com.github.dcendents.android-maven'

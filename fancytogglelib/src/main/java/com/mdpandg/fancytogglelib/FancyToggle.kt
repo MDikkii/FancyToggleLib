@@ -19,7 +19,7 @@ import android.widget.CompoundButton
 import kotlin.math.max
 
 
-/**
+/*
  *  Copyright 2018 MDP&G Mikołaj Demków
  *  Copyright 2016/5/10 Weiping
  *  Licensed under the Apache License, Version 2.0 (see LICENSE.md)
@@ -33,7 +33,7 @@ import kotlin.math.max
  *  onTouchEvent - translated to Kotlin, changed to FancyToggleLib needs
  *  setProgress - translated to Kotlin, changed to FancyToggleLib needs
  *
- *  */
+ */
 
 class FancyToggle : CompoundButton {
     interface OnStateChangeListener {

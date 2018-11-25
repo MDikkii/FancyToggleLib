@@ -1,6 +1,6 @@
 package com.mdpandg.fancytogglelib
 
-/**
+/*
  *  Copyright 2018 MDP&G Mikołaj Demków
  *  Copyright 2016/5/10 Weiping
  *  Licensed under the Apache License, Version 2.0 (see LICENSE.md)
