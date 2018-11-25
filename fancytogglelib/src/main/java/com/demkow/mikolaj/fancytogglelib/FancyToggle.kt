@@ -22,7 +22,7 @@ import kotlin.math.max
 class FancyToggle : CompoundButton {
     interface OnStateChangeListener {
         fun onStateChange(state: ToggleState)
-        fun onColorUpdate(midColor: Int)
+        fun onColorUpdate(midFillColor: Int, midStrokeColor: Int)
     }
 
     constructor(context: Context?) : super(context) {
@@ -64,11 +64,26 @@ class FancyToggle : CompoundButton {
 
     private var mLeftText: String = DEFAULT_LEFT_TEXT
     private var mRightText: String = DEFAULT_RIGHT_TEXT
-    private var mLeftTextColor: Int = DEFAULT_LEFT_TEXT_COLOR
-    private var mRightTextColor: Int = DEFAULT_RIGHT_TEXT_COLOR
 
+    private var mLeftTextColor: Int = DEFAULT_TEXT_COLOR
+    private var mRightTextColor: Int = DEFAULT_TEXT_COLOR
+    private var mLeftThumbTextColor: Int = DEFAULT_THUMB_TEXT_COLOR
+    private var mRightThumbTextColor: Int = DEFAULT_THUMB_TEXT_COLOR
+
+    //TODO:
+    private var mLeftIconColor: Int = DEFAULT_ICON_COLOR
+    private var mRightIconColor: Int = DEFAULT_ICON_COLOR
+    //TODO:
+    private var mLeftThumbIconColor: Int = DEFAULT_THUMB_ICON_COLOR
+    private var mRightThumbIconColor: Int = DEFAULT_THUMB_ICON_COLOR
+
+    private var mToggleBackgroundColor: Int = DEFAULT_TOGGLE_BACKGROUND_COLOR
+    private var mToggleBorderColor: Int = DEFAULT_TOGGLE_BORDER_COLOR
     private var mLeftThumbColor: Int = DEFAULT_LEFT_THUMB_COLOR
     private var mRightThumbColor: Int = DEFAULT_RIGHT_THUMB_COLOR
+    private var mLeftThumbBorderColor: Int = mLeftThumbColor
+    private var mRightThumbBorderColor: Int = mRightThumbColor
+
     private var mTextSize: Float = 0f
 
     private var mRightContentMeasuredWidth: Float = 0f
@@ -88,7 +103,6 @@ class FancyToggle : CompoundButton {
     private var mThumbHorizontalMargin: Float = 0f
     private var mThumbAnimationDuration: Long = DEFAULT_THUMB_ANIMATION_TIME
 
-
     private var mStartX: Float = 0f
     private var mStartY: Float = 0f
     private var mLastX: Float = 0f
@@ -104,8 +118,8 @@ class FancyToggle : CompoundButton {
     private var mThumbWidth: Float = 0f
 
 
-    private var mStartThumbPosition : Float = 0f
-    private var mEndThumbPosition : Float = 0f
+    private var mStartThumbPosition: Float = 0f
+    private var mEndThumbPosition: Float = 0f
 
     private var mTextToIconMargin: Float = 0f
 
@@ -117,31 +131,59 @@ class FancyToggle : CompoundButton {
         mTapTimeout = ViewConfiguration.getPressedStateDuration() + ViewConfiguration.getTapTimeout()
         mTapTimeout = ViewConfiguration.getPressedStateDuration() + ViewConfiguration.getLongPressTimeout()
 
-
         mThumbVerticalMargin = getPixelFromDp(10f)
         mThumbHorizontalMargin = getPixelFromDp(10f)
 
         mIconSize = getPixelFromDp(48f)
         mTextToIconMargin = getPixelFromDp(10f)
 
-        mLeftDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite)
-        mRightDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_border)
-
-        mLeftThumbDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_white)
-        mRightThumbDrawable = ContextCompat.getDrawable(context, R.drawable.ic_favorite_border_white)
-
         mTextSize = getPixelFromSp(16f)
 
         if (attrs != null) {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FancyToggle)
 
-            mLeftTextColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fancyToggleLeftTextColor, DEFAULT_LEFT_TEXT_COLOR)
-            mLeftText = typedArray.getString(R.styleable.FancyToggle_fancyToggleLeftText) ?: DEFAULT_LEFT_TEXT
+            mLeftTextColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftTextColor, DEFAULT_TEXT_COLOR)
+            mRightTextColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftTextColor, DEFAULT_TEXT_COLOR)
+            mRightThumbTextColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbTextColor, DEFAULT_THUMB_TEXT_COLOR)
+            mLeftThumbTextColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbTextColor, DEFAULT_THUMB_TEXT_COLOR)
+            mLeftIconColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftIconColor, DEFAULT_ICON_COLOR)
+            mRightIconColor = typedArray.getColor(R.styleable.FancyToggle_fntRightIconColor, DEFAULT_ICON_COLOR)
+            mRightThumbIconColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbIconColor, DEFAULT_THUMB_ICON_COLOR)
+            mLeftThumbIconColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbIconColor, DEFAULT_THUMB_ICON_COLOR)
+            mRightThumbColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbColor, DEFAULT_RIGHT_THUMB_COLOR)
+            mLeftThumbColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbColor, DEFAULT_LEFT_THUMB_COLOR)
+            mToggleBackgroundColor =
+                    typedArray.getColor(
+                        R.styleable.FancyToggle_fntToggleBackgroundColor,
+                        DEFAULT_TOGGLE_BACKGROUND_COLOR
+                    )
+            mToggleBorderColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntToggleBorderColor, DEFAULT_TOGGLE_BORDER_COLOR)
+            mLeftThumbBorderColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbBorderColor, mLeftThumbColor)
+            mRightThumbBorderColor =
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbBorderColor, mRightThumbColor)
+            mLeftText = typedArray.getString(R.styleable.FancyToggle_fntLeftText) ?: DEFAULT_LEFT_TEXT
+            mRightText = typedArray.getString(R.styleable.FancyToggle_fntRightText) ?: DEFAULT_RIGHT_TEXT
 
-            mRightTextColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fancyToggleLeftTextColor, DEFAULT_RIGHT_TEXT_COLOR)
-            mRightText = typedArray.getString(R.styleable.FancyToggle_fancyToggleRightText) ?: DEFAULT_RIGHT_TEXT
+
+            mRightThumbDrawable =
+                    typedArray.getDrawable(R.styleable.FancyToggle_fntRightThumbIcon) ?:
+                    ContextCompat.getDrawable(context, R.drawable.ic_favorite_border_white)
+            mRightDrawable =
+                    typedArray.getDrawable(R.styleable.FancyToggle_fntRightIcon) ?:
+                    ContextCompat.getDrawable(context, R.drawable.ic_favorite_border)
+            mLeftThumbDrawable =
+                    typedArray.getDrawable(R.styleable.FancyToggle_fntLeftThumbIcon) ?:
+                    ContextCompat.getDrawable(context, R.drawable.ic_favorite_white)
+            mLeftDrawable =
+                    typedArray.getDrawable(R.styleable.FancyToggle_fntLeftIcon) ?:
+                    ContextCompat.getDrawable(context, R.drawable.ic_favorite)
 
             typedArray.recycle()
         }
@@ -155,25 +197,29 @@ class FancyToggle : CompoundButton {
         mRightTextPaint.textSize = mTextSize
 
         mThumbLeftTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mThumbLeftTextPaint.color = Color.WHITE
+        mThumbLeftTextPaint.color = mLeftThumbTextColor
         mThumbLeftTextPaint.textSize = mTextSize
 
         mThumbRightTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mThumbRightTextPaint.color = Color.WHITE
+        mThumbRightTextPaint.color = mRightThumbTextColor
         mThumbRightTextPaint.textSize = mTextSize
 
-        mLeftContentMeasuredWidth = mLeftTextPaint.measureText(mLeftText) + mTextToIconMargin + mIconSize
-        mRightContentMeasuredWidth = mRightTextPaint.measureText(mRightText) + mTextToIconMargin + mIconSize
+        mLeftContentMeasuredWidth += mTextToIconMargin + mIconSize
+        mRightContentMeasuredWidth += mTextToIconMargin + mIconSize
+
+        mLeftContentMeasuredWidth += mLeftTextPaint.measureText(mLeftText) + mTextToIconMargin
+        mRightContentMeasuredWidth += mRightTextPaint.measureText(mRightText) + mTextToIconMargin
+
         mMaxContentWidth = max(mLeftContentMeasuredWidth, mRightContentMeasuredWidth)
 
         mBackgroundFillPaint = Paint()
         mBackgroundFillPaint.isAntiAlias = true
-        mBackgroundFillPaint.color = Color.WHITE
+        mBackgroundFillPaint.color = mToggleBackgroundColor
         mBackgroundFillPaint.style = Paint.Style.FILL
 
         mBackgroundStrokePaint = Paint()
         mBackgroundStrokePaint.isAntiAlias = true
-        mBackgroundStrokePaint.color = Color.GRAY
+        mBackgroundStrokePaint.color = mToggleBorderColor
         mBackgroundStrokePaint.strokeWidth = getPixelFromDp(1f)
         mBackgroundStrokePaint.style = Paint.Style.STROKE
 
@@ -183,13 +229,13 @@ class FancyToggle : CompoundButton {
 
         mThumbStrokePaint = Paint()
         mThumbStrokePaint.isAntiAlias = true
-        mThumbStrokePaint.color = Color.WHITE
         mThumbStrokePaint.strokeWidth = getPixelFromDp(1f)
         mThumbStrokePaint.style = Paint.Style.STROKE
 
         mFontHeight = -mLeftTextPaint.fontMetrics.top + mLeftTextPaint.fontMetrics.bottom
 
         mCurrentState = ToggleState.LEFT
+        isChecked = false
     }
 
 
@@ -241,10 +287,11 @@ class FancyToggle : CompoundButton {
         thumbRight: Float,
         thumbBottom: Float
     ) {
-        val midColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
-        mThumbFillPaint.color = midColor
-        mThumbStrokePaint.color = midColor
-        mOnStateChangeListener?.onColorUpdate(midColor)
+        val midFillColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
+        val midStrokeColor = calculateMidColor(mLeftThumbBorderColor, mRightThumbBorderColor, mProgress)
+        mThumbFillPaint.color = midFillColor
+        mThumbStrokePaint.color = midStrokeColor
+        mOnStateChangeListener?.onColorUpdate(midFillColor, midStrokeColor)
 
         val progressAlpha = getAlphaFromProgress()
         val reverseProgressAlpha = getAlphaFromReverseProgress()
@@ -421,7 +468,7 @@ class FancyToggle : CompoundButton {
                         else -> ToggleState.LEFT
                     }
 
-                    animateToggle(mCurrentState, true)
+                    animateToggle(mCurrentState)
                 }
             }
             else -> {
@@ -449,14 +496,14 @@ class FancyToggle : CompoundButton {
             ToggleState.LEFT
         }
 
-        animateToggle(mCurrentState, true)
+        animateToggle(mCurrentState)
     }
 
     override fun performClick(): Boolean {
         return super.performClick()
     }
 
-    fun animateToggle(state: ToggleState, reset: Boolean) {
+    fun animateToggle(state: ToggleState) {
 
         if (mProgressAnimator?.isRunning == true) {
             return
@@ -495,14 +542,11 @@ class FancyToggle : CompoundButton {
             ToggleState.LEFT_TO_RIGHT -> (mThumbAnimationDuration * (1 - mProgress)).toLong()
             ToggleState.RIGHT_TO_LEFT -> (mThumbAnimationDuration * mProgress).toLong()
         }
-
-        Log.d("status and duration", state.name + " " + mProgressAnimator?.duration)
     }
 
     // from JellyLib !
     private fun setProgress(progress: Float, shouldCallListener: Boolean) {
         var tempProgress = progress
-        Log.d("progress", progress.toString())
 
         if (tempProgress >= 1f) {
             tempProgress = 1f
@@ -552,10 +596,14 @@ class FancyToggle : CompoundButton {
     }
 
     companion object {
-        private const val DEFAULT_LEFT_TEXT_COLOR: Int = Color.BLACK
-        private const val DEFAULT_RIGHT_TEXT_COLOR: Int = Color.BLACK
-        private var DEFAULT_LEFT_THUMB_COLOR: Int = Color.rgb(173, 0, 0)
-        private var DEFAULT_RIGHT_THUMB_COLOR: Int = Color.rgb(0, 109, 31)
+        private const val DEFAULT_TEXT_COLOR: Int = Color.BLACK
+        private const val DEFAULT_THUMB_TEXT_COLOR: Int = Color.WHITE
+        private const val DEFAULT_ICON_COLOR: Int = Color.BLACK
+        private const val DEFAULT_THUMB_ICON_COLOR: Int = Color.WHITE
+        private const val DEFAULT_LEFT_THUMB_COLOR: Int = Color.RED
+        private const val DEFAULT_RIGHT_THUMB_COLOR: Int = Color.BLUE
+        private const val DEFAULT_TOGGLE_BACKGROUND_COLOR: Int = Color.WHITE
+        private const val DEFAULT_TOGGLE_BORDER_COLOR: Int = Color.LTGRAY
         private const val DEFAULT_RIGHT_TEXT = "Online"
         private const val DEFAULT_LEFT_TEXT = "Offline"
         private const val DEFAULT_THUMB_ANIMATION_TIME = 600L

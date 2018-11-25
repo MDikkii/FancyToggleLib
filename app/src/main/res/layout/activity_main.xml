@@ -19,17 +19,12 @@
         android:id="@+id/fancytoggle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:paddingStart="20dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="20dp"
-        android:background="@android:color/holo_blue_light"
+        android:padding="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/color_bar" />
-
 
 
 </android.support.constraint.ConstraintLayout>

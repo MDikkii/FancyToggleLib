@@ -1,9 +1,7 @@
 package com.demkow.mikolaj.fancytoggle
 
-import android.graphics.ColorFilter
-import android.graphics.PorterDuff
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import com.demkow.mikolaj.fancytogglelib.FancyToggle
 import com.demkow.mikolaj.fancytogglelib.ToggleState
@@ -21,8 +19,8 @@ class MainActivity : AppCompatActivity() {
                 Log.d("state", state.name)
             }
 
-            override fun onColorUpdate(midColor: Int) {
-                color_bar.setBackgroundColor(midColor)
+            override fun onColorUpdate(midFillColor: Int, midStrokeColor: Int) {
+                color_bar.setBackgroundColor(midFillColor)
             }
 
         }

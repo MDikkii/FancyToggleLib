@@ -1,11 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="FancyToggle">
-        <attr name="fancyToggleLeftTextColor" format="color|reference"/>
-        <attr name="fancyToggleRightTextColor" format="color|reference"/>
-
-        <attr name="fancyToggleRightText" format="string|reference"/>
-        <attr name="fancyToggleLeftText" format="string|reference"/>
+        <attr name="fntLeftTextColor" format="color|reference"/>
+        <attr name="fntRightTextColor" format="color|reference"/>
+        <attr name="fntRightThumbTextColor" format="color|reference"/>
+        <attr name="fntLeftThumbTextColor" format="color|reference"/>
+        <attr name="fntLeftIconColor" format="color|reference"/>
+        <attr name="fntRightIconColor" format="color|reference"/>
+        <attr name="fntRightThumbIconColor" format="color|reference"/>
+        <attr name="fntLeftThumbIconColor" format="color|reference"/>
+        <attr name="fntRightThumbColor" format="color|reference"/>
+        <attr name="fntLeftThumbColor" format="color|reference"/>
+        <attr name="fntToggleBackgroundColor" format="color|reference"/>
+        <attr name="fntToggleBorderColor" format="color|reference"/>
+        <attr name="fntLeftThumbBorderColor" format="color|reference"/>
+        <attr name="fntRightThumbBorderColor" format="color|reference"/>
+        <attr name="fntRightThumbIcon" format="reference"/>
+        <attr name="fntLeftThumbIcon" format="reference"/>
+        <attr name="fntLeftIcon" format="reference"/>
+        <attr name="fntRightIcon" format="reference"/>
+        <attr name="fntRightText" format="string|reference"/>
+        <attr name="fntLeftText" format="string|reference"/>
+        <attr name="fntFontFace" format="reference"/>
 
     </declare-styleable>
 </resources>
