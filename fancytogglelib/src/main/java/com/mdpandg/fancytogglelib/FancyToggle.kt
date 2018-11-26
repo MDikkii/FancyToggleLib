@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.support.v4.content.ContextCompat
 import android.util.AttributeSet
@@ -141,6 +142,8 @@ class FancyToggle : CompoundButton {
 
     private var mIconSize: Float = 0f
 
+    private var mFontName: String = ""
+
     private fun initialization(attrs: AttributeSet? = null) {
         mDensity = context.resources.displayMetrics.density
         mTouchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -201,59 +204,40 @@ class FancyToggle : CompoundButton {
                     typedArray.getDrawable(R.styleable.FancyToggle_fntLeftIcon) ?:
                     ContextCompat.getDrawable(context, R.drawable.ic_favorite)
 
+            mFontName = typedArray.getString(R.styleable.FancyToggle_fntFontFace) ?: mFontName
+
             typedArray.recycle()
         }
 
-        mLeftTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mLeftTextPaint.color = mLeftTextColor
-        mLeftTextPaint.textSize = mTextSize
+        setupTypeface()
 
-        mRightTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mRightTextPaint.color = mRightTextColor
-        mRightTextPaint.textSize = mTextSize
+        mLeftTextPaint = Paint().initTextPaint(mLeftTextColor)
+        mRightTextPaint = Paint().initTextPaint(mRightTextColor)
+        mThumbLeftTextPaint = Paint().initTextPaint(mLeftThumbTextColor)
+        mThumbRightTextPaint = Paint().initTextPaint(mRightThumbTextColor)
 
-        mThumbLeftTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mThumbLeftTextPaint.color = mLeftThumbTextColor
-        mThumbLeftTextPaint.textSize = mTextSize
-
-        mThumbRightTextPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        mThumbRightTextPaint.color = mRightThumbTextColor
-        mThumbRightTextPaint.textSize = mTextSize
+        mBackgroundFillPaint = Paint().initShapeFillPaint(mToggleBackgroundColor)
+        mBackgroundStrokePaint = Paint().initShapeStrokePaint(mToggleBorderColor, getPixelFromDp(1f))
+        mThumbFillPaint = Paint().initShapeFillPaint()
+        mThumbStrokePaint = Paint().initShapeStrokePaint(strokeWidth = getPixelFromDp(1f))
 
         mLeftContentMeasuredWidth += mTextToIconMargin + mIconSize
         mRightContentMeasuredWidth += mTextToIconMargin + mIconSize
-
         mLeftContentMeasuredWidth += mLeftTextPaint.measureText(mLeftText) + mTextToIconMargin
         mRightContentMeasuredWidth += mRightTextPaint.measureText(mRightText) + mTextToIconMargin
-
         mMaxContentWidth = max(mLeftContentMeasuredWidth, mRightContentMeasuredWidth)
-
-        mBackgroundFillPaint = Paint()
-        mBackgroundFillPaint.isAntiAlias = true
-        mBackgroundFillPaint.color = mToggleBackgroundColor
-        mBackgroundFillPaint.style = Paint.Style.FILL
-
-        mBackgroundStrokePaint = Paint()
-        mBackgroundStrokePaint.isAntiAlias = true
-        mBackgroundStrokePaint.color = mToggleBorderColor
-        mBackgroundStrokePaint.strokeWidth = getPixelFromDp(1f)
-        mBackgroundStrokePaint.style = Paint.Style.STROKE
-
-        mThumbFillPaint = Paint()
-        mThumbFillPaint.isAntiAlias = true
-        mThumbFillPaint.style = Paint.Style.FILL
-
-        mThumbStrokePaint = Paint()
-        mThumbStrokePaint.isAntiAlias = true
-        mThumbStrokePaint.strokeWidth = getPixelFromDp(1f)
-        mThumbStrokePaint.style = Paint.Style.STROKE
 
         mFontHeight = -mLeftTextPaint.fontMetrics.top + mLeftTextPaint.fontMetrics.bottom
 
-        mCurrentState = ToggleState.LEFT
-        isChecked = false
+        mCurrentState = if(isChecked) ToggleState.RIGHT else ToggleState.LEFT
     }
 
+    private fun setupTypeface() {
+        if (!mFontName.isEmpty()) {
+            val typefaceFromAssets = Typeface.createFromAsset(context.assets, mFontName)
+            typeface = typefaceFromAssets
+        }
+    }
 
     private fun drawBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float) {
         // background can be drawn only once per size change / maybe on bitmap?
@@ -603,6 +587,30 @@ class FancyToggle : CompoundButton {
             Color.blue(leftColor) + ((Color.blue(rightColor) - Color.blue(leftColor)) * progress).toInt()
         )
 
+    }
+
+    private fun Paint.initTextPaint(color: Int) : Paint {
+        isAntiAlias = true
+        this.color = color
+        this.textSize = mTextSize
+        this.typeface = typeface
+        return this
+    }
+
+    private fun Paint.initShapePaint(color: Int, style: Paint.Style, strokeWidth: Float = 0f) : Paint {
+        isAntiAlias = true
+        this.color = color
+        this.style = style
+        this.strokeWidth = strokeWidth
+        return this
+    }
+
+    private fun Paint.initShapeStrokePaint(color: Int = Color.BLACK, strokeWidth: Float) : Paint {
+        return this.initShapePaint(color, Paint.Style.STROKE, strokeWidth)
+    }
+
+    private fun Paint.initShapeFillPaint(color: Int = Color.BLACK) : Paint {
+        return this.initShapePaint(color, Paint.Style.FILL)
     }
 
     companion object {
