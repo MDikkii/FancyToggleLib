@@ -118,7 +118,8 @@ class FancyToggle : CompoundButton {
 
     private var mThumbVerticalMargin: Float = 0f
     private var mThumbHorizontalMargin: Float = 0f
-    private var mThumbHorizontalPadding: Float = 0f
+    private var mThumbStartPadding: Float = 0f
+    private var mThumbEndPadding: Float = 0f
 
     private var mThumbAnimationDuration: Long = DEFAULT_THUMB_ANIMATION_TIME
 
@@ -154,7 +155,8 @@ class FancyToggle : CompoundButton {
 
         mThumbVerticalMargin = getPixelFromDp(6f)
         mThumbHorizontalMargin = getPixelFromDp(6f)
-        mThumbHorizontalPadding = getPixelFromDp(20f)
+        mThumbStartPadding = getPixelFromDp(10f)
+        mThumbEndPadding = getPixelFromDp(20f)
 
         mIconSize = getPixelFromDp(48f)
         mTextSize = getPixelFromSp(16f)
@@ -162,28 +164,28 @@ class FancyToggle : CompoundButton {
         if (attrs != null) {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FancyToggle)
 
-            mLeftTextColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftTextColor, DEFAULT_TEXT_COLOR)
-            mRightTextColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftTextColor, DEFAULT_TEXT_COLOR)
+            mLeftTextColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftTextColor, mLeftTextColor)
+            mRightTextColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftTextColor, mRightTextColor)
             mRightThumbTextColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbTextColor, DEFAULT_THUMB_TEXT_COLOR)
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbTextColor, mRightThumbTextColor)
             mLeftThumbTextColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbTextColor, DEFAULT_THUMB_TEXT_COLOR)
-            mLeftIconColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftIconColor, DEFAULT_ICON_COLOR)
-            mRightIconColor = typedArray.getColor(R.styleable.FancyToggle_fntRightIconColor, DEFAULT_ICON_COLOR)
+                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbTextColor, mLeftThumbTextColor)
+            mLeftIconColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftIconColor, mLeftIconColor)
+            mRightIconColor = typedArray.getColor(R.styleable.FancyToggle_fntRightIconColor, mRightIconColor)
             mRightThumbIconColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbIconColor, DEFAULT_THUMB_ICON_COLOR)
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbIconColor, mRightThumbIconColor)
             mLeftThumbIconColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbIconColor, DEFAULT_THUMB_ICON_COLOR)
+                    typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbIconColor, mLeftThumbIconColor)
             mRightThumbColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbColor, DEFAULT_RIGHT_THUMB_COLOR)
-            mLeftThumbColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbColor, DEFAULT_LEFT_THUMB_COLOR)
+                    typedArray.getColor(R.styleable.FancyToggle_fntRightThumbColor, mRightThumbColor)
+            mLeftThumbColor = typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbColor, mLeftThumbColor)
             mToggleBackgroundColor =
                     typedArray.getColor(
                         R.styleable.FancyToggle_fntToggleBackgroundColor,
-                        DEFAULT_TOGGLE_BACKGROUND_COLOR
+                        mToggleBackgroundColor
                     )
             mToggleBorderColor =
-                    typedArray.getColor(R.styleable.FancyToggle_fntToggleBorderColor, DEFAULT_TOGGLE_BORDER_COLOR)
+                    typedArray.getColor(R.styleable.FancyToggle_fntToggleBorderColor, mToggleBorderColor)
             mLeftThumbBorderColor =
                     typedArray.getColor(R.styleable.FancyToggle_fntLeftThumbBorderColor, mLeftThumbColor)
             mRightThumbBorderColor =
@@ -213,6 +215,15 @@ class FancyToggle : CompoundButton {
                         mTextToIconMargin.toInt()
                     ).toFloat()
 
+            mThumbStartPadding = typedArray.getDimensionPixelSize(
+                R.styleable.FancyToggle_fntThumbStartPadding,
+                mThumbStartPadding.toInt()
+            ).toFloat()
+            mThumbEndPadding = typedArray.getDimensionPixelSize(
+                R.styleable.FancyToggle_fntThumbEndPadding,
+                mThumbEndPadding.toInt()
+            ).toFloat()
+
             typedArray.recycle()
         }
 
@@ -236,7 +247,7 @@ class FancyToggle : CompoundButton {
 
         mFontHeight = -mLeftTextPaint.fontMetrics.top + mLeftTextPaint.fontMetrics.bottom
 
-        mCurrentState = if(isChecked) ToggleState.RIGHT else ToggleState.LEFT
+        mCurrentState = if (isChecked) ToggleState.RIGHT else ToggleState.LEFT
     }
 
     private fun setupTypeface() {
@@ -325,22 +336,23 @@ class FancyToggle : CompoundButton {
         )
 
 
+        val iconPositionOffset = (thumbBottom - thumbTop - mIconSize) / 2
         mThumbRightTextPaint.alpha = progressAlpha
         mThumbLeftTextPaint.alpha = reverseProgressAlpha
         mLeftThumbDrawable?.setBounds(
-            (thumbLeft  + mThumbHorizontalPadding).toInt(),
-            thumbTop.toInt(),
-            (thumbLeft  + mThumbHorizontalPadding + mIconSize).toInt(),
-            thumbBottom.toInt()
+            (thumbLeft + mThumbStartPadding).toInt(),
+            (thumbTop + iconPositionOffset).toInt(),
+            (thumbLeft + mThumbStartPadding + mIconSize).toInt(),
+            (thumbBottom - iconPositionOffset).toInt()
         )
         mLeftThumbDrawable?.alpha = reverseProgressAlpha
         mLeftThumbDrawable?.draw(canvas!!)
 
         mRightThumbDrawable?.setBounds(
-            (thumbLeft  + mThumbHorizontalPadding).toInt(),
-            thumbTop.toInt(),
-            (thumbLeft  + mThumbHorizontalPadding + mIconSize).toInt(),
-            thumbBottom.toInt()
+            (thumbLeft + mThumbStartPadding).toInt(),
+            (thumbTop + iconPositionOffset).toInt(),
+            (thumbLeft + mThumbStartPadding + mIconSize).toInt(),
+            (thumbBottom - iconPositionOffset).toInt()
         )
         mRightThumbDrawable?.alpha = progressAlpha
         mRightThumbDrawable?.draw(canvas!!)
@@ -348,14 +360,14 @@ class FancyToggle : CompoundButton {
         // thumb text
         canvas?.drawText(
             mLeftText,
-            thumbLeft + mIconSize  + mThumbHorizontalPadding + mTextToIconMargin,
+            thumbLeft + mIconSize + mThumbStartPadding + mTextToIconMargin,
             mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
             mThumbLeftTextPaint
         )
 
         canvas?.drawText(
             mRightText,
-            thumbLeft + mIconSize  + mThumbHorizontalPadding + mTextToIconMargin,
+            thumbLeft + mIconSize + mThumbStartPadding + mTextToIconMargin,
             mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
             mThumbRightTextPaint
         )
@@ -372,34 +384,36 @@ class FancyToggle : CompoundButton {
         mLeftTextPaint.alpha = progressAlpha
         mRightTextPaint.alpha = reverseProgressAlpha
 
+        val iconPositionOffset = (thumbBottom - thumbTop - mIconSize) / 2
+
         // background text
         mLeftDrawable?.setBounds(
-            (mStartThumbPosition + mThumbHorizontalPadding).toInt(),
-            thumbTop.toInt(),
-            (mStartThumbPosition + mThumbHorizontalPadding + mIconSize).toInt(),
-            thumbBottom.toInt()
+            (mStartThumbPosition + mThumbStartPadding).toInt(),
+            (thumbTop + iconPositionOffset).toInt(),
+            (mStartThumbPosition + mThumbStartPadding + mIconSize).toInt(),
+            (thumbBottom - iconPositionOffset).toInt()
         )
         mLeftDrawable?.alpha = progressAlpha
         mLeftDrawable?.draw(canvas!!)
 
         mRightDrawable?.setBounds(
-            (mEndThumbPosition - mRightContentMeasuredWidth - mTextToIconMargin - mThumbHorizontalPadding).toInt(),
-            thumbTop.toInt(),
-            (mEndThumbPosition - mRightContentMeasuredWidth - mTextToIconMargin - mThumbHorizontalPadding +  mIconSize).toInt(),
-            thumbBottom.toInt()
+            (mEndThumbPosition - mRightContentMeasuredWidth - mThumbEndPadding).toInt(),
+            (thumbTop + iconPositionOffset).toInt(),
+            (mEndThumbPosition - mRightContentMeasuredWidth - mThumbEndPadding + mIconSize).toInt(),
+            (thumbBottom - iconPositionOffset).toInt()
         )
         mRightDrawable?.alpha = reverseProgressAlpha
         mRightDrawable?.draw(canvas!!)
 
         canvas?.drawText(
             mLeftText,
-            mStartThumbPosition + mIconSize + mTextToIconMargin + mThumbHorizontalPadding,
+            mStartThumbPosition + mIconSize + mTextToIconMargin + mThumbStartPadding,
             mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
             mLeftTextPaint
         )
         canvas?.drawText(
             mRightText,
-            mEndThumbPosition - mRightContentMeasuredWidth - mThumbHorizontalPadding + mIconSize,
+            mEndThumbPosition - mRightContentMeasuredWidth - mThumbEndPadding + mTextToIconMargin + mIconSize,
             mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
             mRightTextPaint
         )
@@ -429,13 +443,12 @@ class FancyToggle : CompoundButton {
         mStartThumbPosition = mToggleStartPadding + mThumbHorizontalMargin
         mEndThumbPosition = w - mToggleEndPadding - mThumbHorizontalMargin
 
-        mThumbWidth = mMaxContentWidth + mThumbHorizontalPadding * 2
+        mThumbWidth = mMaxContentWidth + mThumbStartPadding + mThumbEndPadding
         mThumbOffset = w - mToggleStartPadding - mToggleEndPadding - 2 * mThumbHorizontalMargin -
                 mThumbWidth
 
     }
 
-    // from JellyLib !
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (!isEnabled) {
             return false
@@ -552,7 +565,6 @@ class FancyToggle : CompoundButton {
         }
     }
 
-    // from JellyLib !
     private fun setProgress(progress: Float, shouldCallListener: Boolean) {
         var tempProgress = progress
 
@@ -586,7 +598,6 @@ class FancyToggle : CompoundButton {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, spToConvert, context.resources.displayMetrics)
     }
 
-    // from JellyLib !
     private fun calculateMidColor(leftColor: Int, rightColor: Int, progress: Float): Int {
         return Color.argb(
             Color.alpha(leftColor) + ((Color.alpha(rightColor) - Color.alpha(leftColor)) * progress).toInt(),
@@ -597,7 +608,7 @@ class FancyToggle : CompoundButton {
 
     }
 
-    private fun Paint.initTextPaint(color: Int) : Paint {
+    private fun Paint.initTextPaint(color: Int): Paint {
         isAntiAlias = true
         this.color = color
         this.textSize = mTextSize
@@ -605,7 +616,7 @@ class FancyToggle : CompoundButton {
         return this
     }
 
-    private fun Paint.initShapePaint(color: Int, style: Paint.Style, strokeWidth: Float = 0f) : Paint {
+    private fun Paint.initShapePaint(color: Int, style: Paint.Style, strokeWidth: Float = 0f): Paint {
         isAntiAlias = true
         this.color = color
         this.style = style
@@ -613,11 +624,11 @@ class FancyToggle : CompoundButton {
         return this
     }
 
-    private fun Paint.initShapeStrokePaint(color: Int = Color.BLACK, strokeWidth: Float) : Paint {
+    private fun Paint.initShapeStrokePaint(color: Int = Color.BLACK, strokeWidth: Float): Paint {
         return this.initShapePaint(color, Paint.Style.STROKE, strokeWidth)
     }
 
-    private fun Paint.initShapeFillPaint(color: Int = Color.BLACK) : Paint {
+    private fun Paint.initShapeFillPaint(color: Int = Color.BLACK): Paint {
         return this.initShapePaint(color, Paint.Style.FILL)
     }
 

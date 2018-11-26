@@ -23,6 +23,8 @@
         <attr name="fntLeftText" format="string|reference"/>
         <attr name="fntFontFace" format="string"/>
         <attr name="fntTextIconMargin" format="dimension"/>
+        <attr name="fntThumbStartPadding" format="dimension"/>
+        <attr name="fntThumbEndPadding" format="dimension"/>
 
     </declare-styleable>
 </resources>
