@@ -87,10 +87,8 @@ class FancyToggle : CompoundButton {
     private var mLeftThumbTextColor: Int = DEFAULT_THUMB_TEXT_COLOR
     private var mRightThumbTextColor: Int = DEFAULT_THUMB_TEXT_COLOR
 
-    //TODO:
     private var mLeftIconColor: Int = DEFAULT_ICON_COLOR
     private var mRightIconColor: Int = DEFAULT_ICON_COLOR
-    //TODO:
     private var mLeftThumbIconColor: Int = DEFAULT_THUMB_ICON_COLOR
     private var mRightThumbIconColor: Int = DEFAULT_THUMB_ICON_COLOR
 
@@ -153,13 +151,12 @@ class FancyToggle : CompoundButton {
         mTapTimeout = ViewConfiguration.getPressedStateDuration() + ViewConfiguration.getTapTimeout()
         mTapTimeout = ViewConfiguration.getPressedStateDuration() + ViewConfiguration.getLongPressTimeout()
 
-        mThumbVerticalMargin = getPixelFromDp(6f)
-        mThumbHorizontalMargin = getPixelFromDp(6f)
-        mThumbStartPadding = getPixelFromDp(10f)
-        mThumbEndPadding = getPixelFromDp(20f)
-
-        mIconSize = getPixelFromDp(48f)
-        mTextSize = getPixelFromSp(16f)
+        mThumbVerticalMargin = getPixelFromDp(DEFAULT_THUMB_MARGIN)
+        mThumbHorizontalMargin = getPixelFromDp(DEFAULT_THUMB_MARGIN)
+        mThumbStartPadding = getPixelFromDp(DEFAULT_THUMB_START_PADDING)
+        mThumbEndPadding = getPixelFromDp(DEFAULT_THUMB_END_PADDING)
+        mIconSize = getPixelFromDp(DEFAULT_ICON_SIZE)
+        mTextSize = textSize
 
         if (attrs != null) {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FancyToggle)
@@ -207,7 +204,7 @@ class FancyToggle : CompoundButton {
                     typedArray.getDrawable(R.styleable.FancyToggle_fntLeftIcon) ?:
                     ContextCompat.getDrawable(context, R.drawable.ic_favorite)
 
-            mFontName = typedArray.getString(R.styleable.FancyToggle_fntFontFace) ?: mFontName
+            mFontName = typedArray.getString(R.styleable.FancyToggle_fntFontAssetsPath) ?: mFontName
 
             mTextToIconMargin =
                     typedArray.getDimensionPixelSize(
@@ -222,6 +219,17 @@ class FancyToggle : CompoundButton {
             mThumbEndPadding = typedArray.getDimensionPixelSize(
                 R.styleable.FancyToggle_fntThumbEndPadding,
                 mThumbEndPadding.toInt()
+            ).toFloat()
+
+            mThumbHorizontalMargin = typedArray.getDimensionPixelSize(
+                R.styleable.FancyToggle_fntThumbHorizontalMargin,
+                mThumbHorizontalMargin.toInt()
+            ).toFloat()
+
+
+            mThumbVerticalMargin = typedArray.getDimensionPixelSize(
+                R.styleable.FancyToggle_fntThumbVerticalMargin,
+                mThumbVerticalMargin.toInt()
             ).toFloat()
 
             typedArray.recycle()
@@ -464,7 +472,6 @@ class FancyToggle : CompoundButton {
             }
             MotionEvent.ACTION_MOVE -> {
                 val x = event.x
-                //set process
                 setProgress(
                     mProgress + (x - mLastX) / mThumbOffset,
                     true
@@ -612,7 +619,7 @@ class FancyToggle : CompoundButton {
         isAntiAlias = true
         this.color = color
         this.textSize = mTextSize
-        this.typeface = typeface
+        this.typeface = this@FancyToggle.typeface
         return this
     }
 
@@ -644,5 +651,9 @@ class FancyToggle : CompoundButton {
         private const val DEFAULT_RIGHT_TEXT = "Online"
         private const val DEFAULT_LEFT_TEXT = "Offline"
         private const val DEFAULT_THUMB_ANIMATION_TIME = 600L
+        private const val DEFAULT_THUMB_MARGIN = 6f
+        private const val DEFAULT_THUMB_START_PADDING = 10f
+        private const val DEFAULT_THUMB_END_PADDING = 20f
+        private const val DEFAULT_ICON_SIZE = 48f
     }
 }

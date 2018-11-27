@@ -21,10 +21,12 @@
         <attr name="fntRightIcon" format="reference"/>
         <attr name="fntRightText" format="string|reference"/>
         <attr name="fntLeftText" format="string|reference"/>
-        <attr name="fntFontFace" format="string"/>
+        <attr name="fntFontAssetsPath" format="string"/>
         <attr name="fntTextIconMargin" format="dimension"/>
         <attr name="fntThumbStartPadding" format="dimension"/>
         <attr name="fntThumbEndPadding" format="dimension"/>
+        <attr name="fntThumbHorizontalMargin" format="dimension"/>
+        <attr name="fntThumbVerticalMargin" format="dimension"/>
 
     </declare-styleable>
 </resources>
