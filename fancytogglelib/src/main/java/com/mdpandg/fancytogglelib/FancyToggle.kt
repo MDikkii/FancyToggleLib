@@ -3,6 +3,7 @@ package com.mdpandg.fancytogglelib
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -17,6 +18,7 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.CompoundButton
+import kotlin.math.abs
 import kotlin.math.max
 
 
@@ -266,7 +268,6 @@ class FancyToggle : CompoundButton {
     }
 
     private fun drawBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float) {
-        // background can be drawn only once per size change / maybe on bitmap?
         drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundFillPaint)
         drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundStrokePaint)
     }
@@ -441,7 +442,6 @@ class FancyToggle : CompoundButton {
 
     }
 
-
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         mToggleTopPadding = paddingTop.toFloat()
         mToggleBottomPadding = paddingBottom.toFloat()
@@ -454,7 +454,6 @@ class FancyToggle : CompoundButton {
         mThumbWidth = mMaxContentWidth + mThumbStartPadding + mThumbEndPadding
         mThumbOffset = w - mToggleStartPadding - mToggleEndPadding - 2 * mThumbHorizontalMargin -
                 mThumbWidth
-
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -487,20 +486,14 @@ class FancyToggle : CompoundButton {
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout) {
                     performClick()
                 } else {
-                    mCurrentState = when {
-                        mProgress <= 0 -> ToggleState.LEFT
-                        mProgress > 0 && mProgress <= 0.5f -> ToggleState.RIGHT_TO_LEFT
-                        mProgress < 1 && mProgress > 0.5f -> ToggleState.LEFT_TO_RIGHT
-                        mProgress >= 1 -> ToggleState.RIGHT
-                        else -> ToggleState.LEFT
-                    }
-
-                    animateToggle(mCurrentState)
-                    parent.requestDisallowInterceptTouchEvent(false)
+                    performTouchEnd()
                 }
+
+                parent.requestDisallowInterceptTouchEvent(false)
             }
             else -> {
                 Log.d("FancyToggle", "Not supported action!")
+                parent.requestDisallowInterceptTouchEvent(false)
                 return false
             }
         }
@@ -508,40 +501,37 @@ class FancyToggle : CompoundButton {
         return true
     }
 
-    override fun setChecked(checked: Boolean) {
-        if (!::mCurrentState.isInitialized) {
-            mCurrentState = ToggleState.LEFT
+    private fun performTouchEnd() {
+        mCurrentState = when {
+            mProgress <= 0 -> ToggleState.LEFT
+            mProgress > 0 && mProgress <= 0.5f -> ToggleState.RIGHT_TO_LEFT
+            mProgress < 1 && mProgress > 0.5f -> ToggleState.LEFT_TO_RIGHT
+            mProgress >= 1 -> ToggleState.RIGHT
+            else -> mCurrentState
         }
 
-        if (mProgressAnimator?.isRunning == true) {
-            return
-        }
-        super.setChecked(checked)
-
-        mCurrentState = if (checked) {
-            ToggleState.RIGHT
-        } else {
-            ToggleState.LEFT
-        }
-
-        animateToggle(mCurrentState)
+        animateToState(mCurrentState)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun performClick(): Boolean {
-        return super.performClick()
+        when (mCurrentState) {
+            ToggleState.LEFT, ToggleState.LEFT_TO_RIGHT -> animateToState(ToggleState.RIGHT)
+            ToggleState.RIGHT, ToggleState.RIGHT_TO_LEFT -> animateToState(ToggleState.LEFT)
+        }
+        return false
     }
 
-    fun animateToggle(state: ToggleState) {
-
+    fun animateToState(state: ToggleState, reset: Boolean = false) {
         if (mProgressAnimator?.isRunning == true) {
             return
         }
 
-        setProgressAnimator(state)
+        setProgressAnimator(state, reset)
         mProgressAnimator?.start()
     }
 
-    private fun setProgressAnimator(state: ToggleState) {
+    private fun setProgressAnimator(state: ToggleState, reset: Boolean) {
         val endValue = when (state) {
             ToggleState.LEFT, ToggleState.RIGHT_TO_LEFT -> 0f
             ToggleState.RIGHT, ToggleState.LEFT_TO_RIGHT -> 1f
@@ -561,19 +551,24 @@ class FancyToggle : CompoundButton {
                     else -> false
                 }
                 super@FancyToggle.setChecked(checked)
-                super.onAnimationEnd(animation)
             }
         })
         mProgressAnimator?.interpolator = AccelerateDecelerateInterpolator()
-        mProgressAnimator?.duration = when (state) {
-            ToggleState.LEFT, ToggleState.RIGHT -> mThumbAnimationDuration
-            ToggleState.LEFT_TO_RIGHT -> (mThumbAnimationDuration * (1 - mProgress)).toLong()
-            ToggleState.RIGHT_TO_LEFT -> (mThumbAnimationDuration * mProgress).toLong()
+
+        if (reset || mProgress == endValue) {
+            mProgressAnimator?.duration = 0L
+        } else {
+            mProgressAnimator?.duration = when (state) {
+                ToggleState.LEFT, ToggleState.RIGHT -> mThumbAnimationDuration
+                ToggleState.LEFT_TO_RIGHT -> (mThumbAnimationDuration * (1 - mProgress)).toLong()
+                ToggleState.RIGHT_TO_LEFT -> (mThumbAnimationDuration * mProgress).toLong()
+            }
         }
     }
 
     private fun setProgress(progress: Float, shouldCallListener: Boolean) {
         var tempProgress = progress
+        val tempState = mCurrentState
 
         if (tempProgress >= 1f) {
             tempProgress = 1f
@@ -582,14 +577,14 @@ class FancyToggle : CompoundButton {
             tempProgress = 0f
             mCurrentState = ToggleState.LEFT
         } else {
-            if (mCurrentState == ToggleState.LEFT) {
+            if (tempProgress - mProgress > 0) {
                 mCurrentState = ToggleState.LEFT_TO_RIGHT
-            } else if (mCurrentState == ToggleState.RIGHT) {
+            } else if(tempProgress - mProgress < 0) {
                 mCurrentState = ToggleState.RIGHT_TO_LEFT
             }
         }
 
-        if (shouldCallListener) {
+        if (shouldCallListener && tempState != mCurrentState) {
             mOnStateChangeListener?.onStateChange(mCurrentState)
         }
 
