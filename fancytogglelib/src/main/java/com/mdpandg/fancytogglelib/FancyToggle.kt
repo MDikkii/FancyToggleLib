@@ -479,8 +479,8 @@ class FancyToggle : CompoundButton {
                 mLastX = x
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                val deltaX = event.x - mStartX
-                val deltaY = event.y - mStartY
+                val deltaX = abs(event.x - mStartX)
+                val deltaY = abs(event.y - mStartY)
                 val deltaTime = event.eventTime - event.downTime
 
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout) {
