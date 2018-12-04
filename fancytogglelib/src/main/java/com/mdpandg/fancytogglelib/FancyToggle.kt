@@ -474,6 +474,7 @@ class FancyToggle : CompoundButton {
     private var isOppositeClick = false
     private var startedInThumb: Boolean = false
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (!isEnabled) {
             return false
@@ -508,9 +509,9 @@ class FancyToggle : CompoundButton {
                 val deltaTime = event.eventTime - event.downTime
 
                 if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout && isOppositeClick) {
-                    performClick()
+                    clicked()
                 } else {
-                    performTouchEnd()
+                    touchEnded()
                 }
 
                 resetTouch()
@@ -552,7 +553,7 @@ class FancyToggle : CompoundButton {
         return mStartY > mThumbTop && mStartY < mThumbBottom && mStartX > thumbLeft && mStartX < thumbRight
     }
 
-    private fun performTouchEnd() {
+    private fun touchEnded() {
         mCurrentState = when {
             mProgress <= 0 -> ToggleState.LEFT
             mProgress > 0 && mProgress <= 0.5f -> ToggleState.RIGHT_TO_LEFT
@@ -564,13 +565,11 @@ class FancyToggle : CompoundButton {
         animateToState(mCurrentState)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun performClick(): Boolean {
+    fun clicked() {
         when (mCurrentState) {
             ToggleState.LEFT, ToggleState.LEFT_TO_RIGHT -> animateToState(ToggleState.RIGHT)
             ToggleState.RIGHT, ToggleState.RIGHT_TO_LEFT -> animateToState(ToggleState.LEFT)
         }
-        return false
     }
 
     fun animateToState(state: ToggleState, reset: Boolean = false) {
@@ -624,7 +623,7 @@ class FancyToggle : CompoundButton {
         if (tempProgress >= 1f) {
             tempProgress = 1f
             mCurrentState = ToggleState.RIGHT
-        } else if (tempProgress <= 0) {
+        } else if (tempProgress <= 0f) {
             tempProgress = 0f
             mCurrentState = ToggleState.LEFT
         } else {
@@ -658,7 +657,6 @@ class FancyToggle : CompoundButton {
             Color.green(leftColor) + ((Color.green(rightColor) - Color.green(leftColor)) * progress).toInt(),
             Color.blue(leftColor) + ((Color.blue(rightColor) - Color.blue(leftColor)) * progress).toInt()
         )
-
     }
 
     private fun Paint.initTextPaint(color: Int): Paint {
