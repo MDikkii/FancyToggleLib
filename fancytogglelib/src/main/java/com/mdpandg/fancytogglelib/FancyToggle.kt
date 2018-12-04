@@ -130,8 +130,6 @@ class FancyToggle : CompoundButton {
     private var mLastX: Float = 0f
 
     private var mProgress: Float = 0f
-    private var mFontHeight: Float = 0f
-
     private var mThumbOffset: Float = 0f
 
     private var mHeightSubPadding: Int = 0
@@ -261,8 +259,6 @@ class FancyToggle : CompoundButton {
         mLeftContentMeasuredWidth += mLeftTextPaint.measureText(mLeftText)
         mRightContentMeasuredWidth += mRightTextPaint.measureText(mRightText)
         mMaxContentWidth = max(mLeftContentMeasuredWidth, mRightContentMeasuredWidth)
-
-        mFontHeight = -mLeftTextPaint.fontMetrics.top + mLeftTextPaint.fontMetrics.bottom
 
         mCurrentState = if (isChecked) ToggleState.RIGHT else ToggleState.LEFT
     }
