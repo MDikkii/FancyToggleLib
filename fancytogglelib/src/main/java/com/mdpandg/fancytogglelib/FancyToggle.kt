@@ -147,6 +147,9 @@ class FancyToggle : CompoundButton {
 
     private var mFontName: String = ""
 
+    private var mSelfMarginDoubled: Float = 0f
+    private var mSelfMargin: Float = 0f
+
     private fun initialization(attrs: AttributeSet? = null) {
         mDensity = context.resources.displayMetrics.density
         mTouchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -159,6 +162,8 @@ class FancyToggle : CompoundButton {
         mThumbEndPadding = getPixelFromDp(DEFAULT_THUMB_END_PADDING)
         mIconSize = getPixelFromDp(DEFAULT_ICON_SIZE)
         mTextSize = textSize
+        mSelfMargin = getPixelFromDp(DEFAULT_SELF_MARGIN)
+        mSelfMarginDoubled = mSelfMargin * 2
 
         if (attrs != null) {
             val typedArray = context.obtainStyledAttributes(attrs, R.styleable.FancyToggle)
@@ -272,11 +277,12 @@ class FancyToggle : CompoundButton {
         drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundStrokePaint)
     }
 
+
     private fun drawToggleBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float, paint: Paint) {
         canvas?.drawRoundRect(
-            paddingStart.toFloat(),
+            paddingStart.toFloat() + mSelfMargin,
             toggleTop,
-            width - paddingEnd.toFloat(),
+            width - paddingEnd.toFloat() - mSelfMargin,
             toggleBottom,
             (mHeightSubPadding) / 2f,
             (mHeightSubPadding) / 2f,
@@ -284,16 +290,17 @@ class FancyToggle : CompoundButton {
         )
     }
 
+
     override fun onDraw(canvas: Canvas?) {
 
-        mHeightSubPadding = height - paddingBottom - paddingTop
-        mWidthSubPadding = width - paddingStart - paddingLeft
+        mHeightSubPadding = height - paddingBottom - paddingTop - mSelfMarginDoubled.toInt()
+        mWidthSubPadding = width - paddingStart - paddingLeft - mSelfMarginDoubled.toInt()
 
-        val thumbTop = mHeightSubPadding / 2 + paddingTop - mTextSize * 1.8f
-        val thumbBottom = mHeightSubPadding / 2 + paddingTop + mTextSize * 1.8f
+        val thumbTop = mHeightSubPadding / 2 + paddingTop + mSelfMargin - mTextSize * 1.8f
+        val thumbBottom = mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize * 1.8f
 
         val progressOffset = mThumbOffset * mProgress
-        val thumbLeft = mStartThumbPosition + progressOffset
+        val thumbLeft = mStartThumbPosition + mSelfMargin + progressOffset
         val thumbRight = thumbLeft + mThumbWidth
 
         val toggleTop = thumbTop - mThumbVerticalMargin
@@ -370,14 +377,15 @@ class FancyToggle : CompoundButton {
         canvas?.drawText(
             mLeftText,
             thumbLeft + mIconSize + mThumbStartPadding + mTextToIconMargin,
-            mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
+            mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mThumbLeftTextPaint
         )
+
 
         canvas?.drawText(
             mRightText,
             thumbLeft + mIconSize + mThumbStartPadding + mTextToIconMargin,
-            mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
+            mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mThumbRightTextPaint
         )
     }
@@ -417,20 +425,20 @@ class FancyToggle : CompoundButton {
         canvas?.drawText(
             mLeftText,
             mStartThumbPosition + mIconSize + mTextToIconMargin + mThumbStartPadding,
-            mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
+            mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mLeftTextPaint
         )
         canvas?.drawText(
             mRightText,
             mEndThumbPosition - mRightContentMeasuredWidth - mThumbEndPadding + mTextToIconMargin + mIconSize,
-            mHeightSubPadding / 2 + paddingTop + mTextSize / 2.5f,
+            mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mRightTextPaint
         )
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val width = paddingStart + paddingEnd + mMaxContentWidth * 4 + mThumbHorizontalMargin * 2
-        val height = 3.6 * mTextSize + 2 * mThumbVerticalMargin + paddingTop + paddingBottom
+        val width = paddingStart + paddingEnd + mMaxContentWidth * 4 + mThumbHorizontalMargin * 2 + mSelfMarginDoubled
+        val height = 3.6 * mTextSize + 2 * mThumbVerticalMargin + paddingTop + paddingBottom + mSelfMarginDoubled
 
         val measuredWidth = resolveSize(width.toInt(), widthMeasureSpec)
         val measuredHeight = resolveSize(height.toInt(), heightMeasureSpec)
@@ -453,7 +461,7 @@ class FancyToggle : CompoundButton {
 
         mThumbWidth = mMaxContentWidth + mThumbStartPadding + mThumbEndPadding
         mThumbOffset = w - mToggleStartPadding - mToggleEndPadding - 2 * mThumbHorizontalMargin -
-                mThumbWidth
+                mThumbWidth - mSelfMarginDoubled
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -579,7 +587,7 @@ class FancyToggle : CompoundButton {
         } else {
             if (tempProgress - mProgress > 0) {
                 mCurrentState = ToggleState.LEFT_TO_RIGHT
-            } else if(tempProgress - mProgress < 0) {
+            } else if (tempProgress - mProgress < 0) {
                 mCurrentState = ToggleState.RIGHT_TO_LEFT
             }
         }
@@ -650,5 +658,6 @@ class FancyToggle : CompoundButton {
         private const val DEFAULT_THUMB_START_PADDING = 10f
         private const val DEFAULT_THUMB_END_PADDING = 20f
         private const val DEFAULT_ICON_SIZE = 48f
+        private const val DEFAULT_SELF_MARGIN = 2f
     }
 }
