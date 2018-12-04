@@ -270,55 +270,37 @@ class FancyToggle : CompoundButton {
         }
     }
 
-    private fun drawBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float) {
-        drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundFillPaint)
-        drawToggleBackground(canvas, toggleTop, toggleBottom, mBackgroundStrokePaint)
+    private fun drawBackground(canvas: Canvas?) {
+        drawToggleBackground(canvas, mBackgroundFillPaint)
+        drawToggleBackground(canvas, mBackgroundStrokePaint)
     }
 
-
-    private fun drawToggleBackground(canvas: Canvas?, toggleTop: Float, toggleBottom: Float, paint: Paint) {
+    private fun drawToggleBackground(canvas: Canvas?, paint: Paint) {
         canvas?.drawRoundRect(
-            paddingStart.toFloat() + mSelfMargin,
-            toggleTop,
-            width - paddingEnd.toFloat() - mSelfMargin,
-            toggleBottom,
+            mToggleLeft,
+            mToggleTop,
+            mToggleRight,
+            mToggleBottom,
             (mHeightSubPadding) / 2f,
             (mHeightSubPadding) / 2f,
             paint
         )
     }
 
-
     override fun onDraw(canvas: Canvas?) {
-
-        mHeightSubPadding = height - paddingBottom - paddingTop - mSelfMarginDoubled.toInt()
-        mWidthSubPadding = width - paddingStart - paddingLeft - mSelfMarginDoubled.toInt()
-
-        val thumbTop = mHeightSubPadding / 2 + paddingTop + mSelfMargin - mTextSize * 1.8f
-        val thumbBottom = mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize * 1.8f
-
-        val progressOffset = mThumbOffset * mProgress
-        val thumbLeft = mStartThumbPosition + mSelfMargin + progressOffset
-        val thumbRight = thumbLeft + mThumbWidth
-
-        val toggleTop = thumbTop - mThumbVerticalMargin
-        val toggleBottom = thumbBottom + mThumbVerticalMargin
-
-        drawBackground(canvas, toggleTop, toggleBottom)
-        drawBackgroundTextAndIcons(thumbTop, thumbBottom, canvas)
-        drawThumb(canvas, thumbLeft, thumbTop, thumbRight, thumbBottom)
+        drawBackground(canvas)
+        drawBackgroundTextAndIcons(canvas)
+        drawThumb(canvas)
     }
 
     private fun getAlphaFromProgress() = (mProgress * 255).toInt()
     private fun getAlphaFromReverseProgress() = 255 - getAlphaFromProgress()
 
-    private fun drawThumb(
-        canvas: Canvas?,
-        thumbLeft: Float,
-        thumbTop: Float,
-        thumbRight: Float,
-        thumbBottom: Float
-    ) {
+    private fun drawThumb(canvas: Canvas?) {
+        val progressOffset = mThumbOffset * mProgress
+        val thumbLeft = mStartThumbPosition + mSelfMargin + progressOffset
+        val thumbRight = thumbLeft + mThumbWidth
+
         val midFillColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
         val midStrokeColor = calculateMidColor(mLeftThumbBorderColor, mRightThumbBorderColor, mProgress)
         mThumbFillPaint.color = midFillColor
@@ -332,41 +314,41 @@ class FancyToggle : CompoundButton {
 
         canvas?.drawRoundRect(
             thumbLeft,
-            thumbTop,
+            mThumbTop,
             thumbRight,
-            thumbBottom,
+            mThumbBottom,
             cornerRadius,
             cornerRadius,
             mThumbFillPaint
         )
         canvas?.drawRoundRect(
             thumbLeft,
-            thumbTop,
+            mThumbTop,
             thumbRight,
-            thumbBottom,
+            mThumbBottom,
             cornerRadius,
             cornerRadius,
             mThumbStrokePaint
         )
 
 
-        val iconPositionOffset = (thumbBottom - thumbTop - mIconSize) / 2
+        val iconPositionOffset = (mThumbBottom - mThumbTop - mIconSize) / 2
         mThumbRightTextPaint.alpha = progressAlpha
         mThumbLeftTextPaint.alpha = reverseProgressAlpha
         mLeftThumbDrawable?.setBounds(
             (thumbLeft + mThumbStartPadding).toInt(),
-            (thumbTop + iconPositionOffset).toInt(),
+            (mThumbTop + iconPositionOffset).toInt(),
             (thumbLeft + mThumbStartPadding + mIconSize).toInt(),
-            (thumbBottom - iconPositionOffset).toInt()
+            (mThumbBottom - iconPositionOffset).toInt()
         )
         mLeftThumbDrawable?.alpha = reverseProgressAlpha
         mLeftThumbDrawable?.draw(canvas!!)
 
         mRightThumbDrawable?.setBounds(
             (thumbLeft + mThumbStartPadding).toInt(),
-            (thumbTop + iconPositionOffset).toInt(),
+            (mThumbTop + iconPositionOffset).toInt(),
             (thumbLeft + mThumbStartPadding + mIconSize).toInt(),
-            (thumbBottom - iconPositionOffset).toInt()
+            (mThumbBottom - iconPositionOffset).toInt()
         )
         mRightThumbDrawable?.alpha = progressAlpha
         mRightThumbDrawable?.draw(canvas!!)
@@ -388,34 +370,30 @@ class FancyToggle : CompoundButton {
         )
     }
 
-    private fun drawBackgroundTextAndIcons(
-        thumbTop: Float,
-        thumbBottom: Float,
-        canvas: Canvas?
-    ) {
+    private fun drawBackgroundTextAndIcons(canvas: Canvas?) {
         val progressAlpha = getAlphaFromProgress()
         val reverseProgressAlpha = getAlphaFromReverseProgress()
 
         mLeftTextPaint.alpha = progressAlpha
         mRightTextPaint.alpha = reverseProgressAlpha
 
-        val iconPositionOffset = (thumbBottom - thumbTop - mIconSize) / 2
+        val iconPositionOffset = (mThumbBottom - mThumbTop - mIconSize) / 2
 
         // background text
         mLeftDrawable?.setBounds(
             (mStartThumbPosition + mThumbStartPadding).toInt(),
-            (thumbTop + iconPositionOffset).toInt(),
+            (mThumbTop + iconPositionOffset).toInt(),
             (mStartThumbPosition + mThumbStartPadding + mIconSize).toInt(),
-            (thumbBottom - iconPositionOffset).toInt()
+            (mThumbBottom - iconPositionOffset).toInt()
         )
         mLeftDrawable?.alpha = progressAlpha
         mLeftDrawable?.draw(canvas!!)
 
         mRightDrawable?.setBounds(
             (mEndThumbPosition - mRightContentMeasuredWidth - mThumbEndPadding).toInt(),
-            (thumbTop + iconPositionOffset).toInt(),
+            (mThumbTop + iconPositionOffset).toInt(),
             (mEndThumbPosition - mRightContentMeasuredWidth - mThumbEndPadding + mIconSize).toInt(),
-            (thumbBottom - iconPositionOffset).toInt()
+            (mThumbBottom - iconPositionOffset).toInt()
         )
         mRightDrawable?.alpha = reverseProgressAlpha
         mRightDrawable?.draw(canvas!!)
