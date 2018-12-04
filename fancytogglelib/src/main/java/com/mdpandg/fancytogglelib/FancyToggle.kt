@@ -111,15 +111,17 @@ class FancyToggle : CompoundButton {
     private var mTouchSlop: Int = 0
     private var mTapTimeout: Int = 0
 
-    private var mToggleTopPadding: Float = 0f
-    private var mToggleBottomPadding: Float = 0f
-    private var mToggleEndPadding: Float = 0f
-    private var mToggleStartPadding: Float = 0f
-
     private var mThumbVerticalMargin: Float = 0f
     private var mThumbHorizontalMargin: Float = 0f
     private var mThumbStartPadding: Float = 0f
     private var mThumbEndPadding: Float = 0f
+
+    private var mThumbTop: Float = 0f
+    private var mThumbBottom: Float = 0f
+    private var mToggleTop: Float = 0f
+    private var mToggleBottom: Float = 0f
+    private var mToggleLeft: Float = 0f
+    private var mToggleRight: Float = 0f
 
     private var mThumbAnimationDuration: Long = DEFAULT_THUMB_ANIMATION_TIME
 
@@ -438,7 +440,8 @@ class FancyToggle : CompoundButton {
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = paddingStart + paddingEnd + mMaxContentWidth * 4 + mThumbHorizontalMargin * 2 + mSelfMarginDoubled
-        val height = 3.6 * mTextSize + 2 * mThumbVerticalMargin + paddingTop + paddingBottom + mSelfMarginDoubled
+        val height =
+            DEFAULT_HEIGHT_RATIO * mTextSize + 2 * mThumbVerticalMargin + paddingTop + paddingBottom + mSelfMarginDoubled
 
         val measuredWidth = resolveSize(width.toInt(), widthMeasureSpec)
         val measuredHeight = resolveSize(height.toInt(), heightMeasureSpec)
@@ -451,62 +454,106 @@ class FancyToggle : CompoundButton {
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        mToggleTopPadding = paddingTop.toFloat()
-        mToggleBottomPadding = paddingBottom.toFloat()
-        mToggleStartPadding = paddingStart.toFloat()
-        mToggleEndPadding = paddingEnd.toFloat()
+        val startPadding = paddingStart.toFloat()
+        val endPadding = paddingEnd.toFloat()
 
-        mStartThumbPosition = mToggleStartPadding + mThumbHorizontalMargin
-        mEndThumbPosition = w - mToggleEndPadding - mThumbHorizontalMargin
+        mStartThumbPosition = startPadding + mThumbHorizontalMargin
+        mEndThumbPosition = w - endPadding - mThumbHorizontalMargin
+
+        mHeightSubPadding = h - paddingBottom - paddingTop - mSelfMarginDoubled.toInt()
+        mWidthSubPadding = w - paddingStart - paddingEnd - mSelfMarginDoubled.toInt()
 
         mThumbWidth = mMaxContentWidth + mThumbStartPadding + mThumbEndPadding
-        mThumbOffset = w - mToggleStartPadding - mToggleEndPadding - 2 * mThumbHorizontalMargin -
-                mThumbWidth - mSelfMarginDoubled
+        mThumbOffset = w - startPadding - endPadding - 2 * mThumbHorizontalMargin - mThumbWidth - mSelfMarginDoubled
+
+        mThumbTop = mHeightSubPadding / 2 + paddingTop + mSelfMargin - mTextSize * DEFAULT_HEIGHT_RATIO / 2
+        mThumbBottom = mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize * DEFAULT_HEIGHT_RATIO / 2
+
+        mToggleTop = mThumbTop - mThumbVerticalMargin
+        mToggleBottom = mThumbBottom + mThumbVerticalMargin
+        mToggleLeft = paddingStart.toFloat() + mSelfMargin
+        mToggleRight = w - paddingEnd.toFloat() - mSelfMargin
     }
+
+    private var isOppositeClick = false
+    private var startedInThumb: Boolean = false
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (!isEnabled) {
             return false
         }
 
-        parent.requestDisallowInterceptTouchEvent(true)
-
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
+                parent.requestDisallowInterceptTouchEvent(true)
+
                 mStartX = event.x
                 mStartY = event.y
                 mLastX = mStartX
+
+                isOppositeClick = isEventOnOppositeSide()
+                startedInThumb = isEventInThumb()
+
             }
             MotionEvent.ACTION_MOVE -> {
-                val x = event.x
-                setProgress(
-                    mProgress + (x - mLastX) / mThumbOffset,
-                    true
-                )
+                if (startedInThumb) {
+                    val x = event.x
+                    setProgress(
+                        mProgress + (x - mLastX) / mThumbOffset,
+                        true
+                    )
 
-                mLastX = x
+                    mLastX = x
+                }
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
                 val deltaX = abs(event.x - mStartX)
                 val deltaY = abs(event.y - mStartY)
                 val deltaTime = event.eventTime - event.downTime
 
-                if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout) {
+                if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout && isOppositeClick) {
                     performClick()
                 } else {
                     performTouchEnd()
                 }
 
-                parent.requestDisallowInterceptTouchEvent(false)
+                resetTouch()
             }
             else -> {
                 Log.d("FancyToggle", "Not supported action!")
-                parent.requestDisallowInterceptTouchEvent(false)
+                resetTouch()
                 return false
             }
         }
 
         return true
+    }
+
+    private fun resetTouch() {
+        isOppositeClick = false
+        startedInThumb = false
+
+        parent.requestDisallowInterceptTouchEvent(false)
+    }
+
+    private fun isEventOnOppositeSide(): Boolean {
+        val centerX = mWidthSubPadding / 2 + paddingStart
+        val isXOnOppositeSide =
+            (mCurrentState == ToggleState.LEFT && mStartX > centerX && mStartX < mToggleRight) ||
+                    (mCurrentState == ToggleState.RIGHT && mStartX < centerX && mStartX > mToggleLeft)
+
+
+        return isXOnOppositeSide && mStartY > mThumbTop && mStartY < mThumbBottom
+    }
+
+    private fun isEventInThumb(): Boolean {
+
+        val progressOffset = mThumbOffset * mProgress
+        val thumbLeft = mStartThumbPosition + mSelfMargin + progressOffset
+        val thumbRight = thumbLeft + mThumbWidth
+
+
+        return mStartY > mThumbTop && mStartY < mThumbBottom && mStartX > thumbLeft && mStartX < thumbRight
     }
 
     private fun performTouchEnd() {
@@ -659,5 +706,6 @@ class FancyToggle : CompoundButton {
         private const val DEFAULT_THUMB_END_PADDING = 20f
         private const val DEFAULT_ICON_SIZE = 48f
         private const val DEFAULT_SELF_MARGIN = 2f
+        private const val DEFAULT_HEIGHT_RATIO = 3.6f
     }
 }
