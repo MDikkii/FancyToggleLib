@@ -15,16 +15,26 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.mdpandg.fancytogglelib.FancyToggle
-        android:id="@+id/fancytoggle"
-        android:layout_width="0dp"
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/color_bar" />
+        android:background="@android:color/white"
+        app:layout_constraintTop_toTopOf="@+id/color_bar">
+
+        <com.mdpandg.fancytogglelib.FancyToggle
+            android:id="@+id/fancytoggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="12dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp" />
+
+    </FrameLayout>
 
 
 </android.support.constraint.ConstraintLayout>
