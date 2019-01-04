@@ -10,7 +10,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
-import androidx.core.content.ContextCompat
 import android.util.AttributeSet
 import android.util.Log
 import android.util.TypedValue
@@ -18,6 +17,7 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.CompoundButton
+import androidx.core.content.ContextCompat
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -102,6 +102,8 @@ class FancyToggle : CompoundButton {
     private var mRightThumbBorderColor: Int = mRightThumbColor
 
     private var mTextSize: Float = 0f
+    private var mContentOffset: Float = 0f
+    private var mHorizontalBias: Float = BASE_CONTENT_BIAS
 
     private var mRightContentMeasuredWidth: Float = 0f
     private var mLeftContentMeasuredWidth: Float = 0f
@@ -249,6 +251,11 @@ class FancyToggle : CompoundButton {
                 mThumbVerticalMargin.toInt()
             ).toFloat()
 
+            mHorizontalBias = typedArray.getFloat(
+                R.styleable.FancyToggle_fntContentHorizontalBias,
+                mHorizontalBias
+            )
+
             typedArray.recycle()
         }
 
@@ -281,6 +288,12 @@ class FancyToggle : CompoundButton {
         }
     }
 
+    override fun onDraw(canvas: Canvas?) {
+        drawBackground(canvas)
+        drawBackgroundTextAndIcons(canvas)
+        drawThumb(canvas)
+    }
+
     private fun drawBackground(canvas: Canvas?) {
         drawToggleBackground(canvas, mBackgroundFillPaint)
         drawToggleBackground(canvas, mBackgroundStrokePaint)
@@ -298,18 +311,10 @@ class FancyToggle : CompoundButton {
         )
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        drawBackground(canvas)
-        drawBackgroundTextAndIcons(canvas)
-        drawThumb(canvas)
-    }
-
-    private fun getAlphaFromProgress() = (mProgress * 255).toInt()
-    private fun getAlphaFromReverseProgress() = 255 - getAlphaFromProgress()
-
     private fun drawThumb(canvas: Canvas?) {
         val thumbLeft = getThumbLeft()
         val thumbRight = getThumbRight(thumbLeft)
+        val thumbCenter = getThumbCenter(thumbLeft)
 
         val midFillColor = calculateMidColor(mLeftThumbColor, mRightThumbColor, mProgress)
         val midStrokeColor = calculateMidColor(mLeftThumbBorderColor, mRightThumbBorderColor, mProgress)
@@ -320,7 +325,7 @@ class FancyToggle : CompoundButton {
         val progressAlpha = getAlphaFromProgress()
         val reverseProgressAlpha = getAlphaFromReverseProgress()
 
-        val cornerRadius = (mHeightSubPadding) / 2f
+        val cornerRadius = mHeightSubPadding / 2f
 
         canvas?.drawRoundRect(
             thumbLeft,
@@ -346,18 +351,18 @@ class FancyToggle : CompoundButton {
         mThumbRightTextPaint.alpha = progressAlpha
         mThumbLeftTextPaint.alpha = reverseProgressAlpha
         mLeftThumbDrawable?.setBounds(
-            (thumbLeft + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2).toInt(),
+            (thumbCenter - mLeftContentMeasuredWidth / 2 + mContentOffset).toInt(),
             (mThumbTop + iconPositionOffset).toInt(),
-            (thumbLeft + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mIconSize).toInt(),
+            (thumbCenter - mLeftContentMeasuredWidth / 2 + mContentOffset + mIconSize).toInt(),
             (mThumbBottom - iconPositionOffset).toInt()
         )
         mLeftThumbDrawable?.alpha = reverseProgressAlpha
         mLeftThumbDrawable?.draw(canvas!!)
 
         mRightThumbDrawable?.setBounds(
-            (thumbLeft + mThumbWidth / 2 - mRightContentMeasuredWidth / 2).toInt(),
+            (thumbCenter - mRightContentMeasuredWidth / 2 + mContentOffset).toInt(),
             (mThumbTop + iconPositionOffset).toInt(),
-            (thumbLeft + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mIconSize).toInt(),
+            (thumbCenter - mRightContentMeasuredWidth / 2 + mContentOffset + mIconSize).toInt(),
             (mThumbBottom - iconPositionOffset).toInt()
         )
         mRightThumbDrawable?.alpha = progressAlpha
@@ -366,7 +371,7 @@ class FancyToggle : CompoundButton {
         // thumb text
         canvas?.drawText(
             mLeftText,
-            thumbLeft + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mIconSize + mTextToIconMargin,
+            thumbCenter - mLeftContentMeasuredWidth / 2 + mContentOffset + mIconSize + mTextToIconMargin,
             mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mThumbLeftTextPaint
         )
@@ -374,7 +379,7 @@ class FancyToggle : CompoundButton {
 
         canvas?.drawText(
             mRightText,
-            thumbLeft + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mIconSize + mTextToIconMargin,
+            thumbCenter - mRightContentMeasuredWidth / 2 + mContentOffset + mIconSize + mTextToIconMargin,
             mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mThumbRightTextPaint
         )
@@ -391,18 +396,18 @@ class FancyToggle : CompoundButton {
 
         // background text
         mLeftDrawable?.setBounds(
-            (mStartThumbPosition  + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2).toInt(),
+            (mStartThumbPosition + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mContentOffset).toInt(),
             (mThumbTop + iconPositionOffset).toInt(),
-            (mStartThumbPosition  + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mIconSize).toInt(),
+            (mStartThumbPosition + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mContentOffset + mIconSize).toInt(),
             (mThumbBottom - iconPositionOffset).toInt()
         )
         mLeftDrawable?.alpha = progressAlpha
         mLeftDrawable?.draw(canvas!!)
 
         mRightDrawable?.setBounds(
-            (mEndThumbPosition - mThumbWidth  + mThumbWidth / 2 - mRightContentMeasuredWidth / 2).toInt(),
+            (mEndThumbPosition - mThumbWidth + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mContentOffset).toInt(),
             (mThumbTop + iconPositionOffset).toInt(),
-            (mEndThumbPosition - mThumbWidth  + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mIconSize).toInt(),
+            (mEndThumbPosition - mThumbWidth + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mContentOffset + mIconSize).toInt(),
             (mThumbBottom - iconPositionOffset).toInt()
         )
         mRightDrawable?.alpha = reverseProgressAlpha
@@ -410,17 +415,20 @@ class FancyToggle : CompoundButton {
 
         canvas?.drawText(
             mLeftText,
-            mStartThumbPosition  + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mIconSize + mTextToIconMargin,
+            mStartThumbPosition + mThumbWidth / 2 - mLeftContentMeasuredWidth / 2 + mContentOffset + mIconSize + mTextToIconMargin,
             mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mLeftTextPaint
         )
         canvas?.drawText(
             mRightText,
-            mEndThumbPosition - mThumbWidth + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mIconSize + mTextToIconMargin,
+            mEndThumbPosition - mThumbWidth + mThumbWidth / 2 - mRightContentMeasuredWidth / 2 + mContentOffset + mIconSize + mTextToIconMargin,
             mHeightSubPadding / 2 + paddingTop + mSelfMargin + mTextSize / 2.5f,
             mRightTextPaint
         )
     }
+
+    private fun getAlphaFromProgress() = (mProgress * 255).toInt()
+    private fun getAlphaFromReverseProgress() = 255 - getAlphaFromProgress()
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
@@ -449,14 +457,13 @@ class FancyToggle : CompoundButton {
         mHeightSubPadding = h - paddingBottom - paddingTop - mSelfMarginDoubled.toInt()
         mWidthSubPadding = w - paddingStart - paddingEnd - mSelfMarginDoubled.toInt()
 
-
-        //TODO: add offset 0 <-> 50% <-> 100% instead of padding for thumb content,
-        // maybe store only center of the thumb instead left and right thumb
         mThumbWidth = max(
             mThumbContentWidth,
             mWidthSubPadding / 2.0f - getPixelFromDp(10f)
         )
         mThumbOffset = w - startPadding - endPadding - 2 * mThumbHorizontalMargin - mThumbWidth - mSelfMarginDoubled
+        mContentOffset = (mThumbWidth - mMaxContentWidth) * (mHorizontalBias - BASE_CONTENT_BIAS)
+
 
         mToggleTop = paddingTop + mSelfMargin
         mToggleBottom = h - paddingBottom - mSelfMargin
@@ -549,6 +556,7 @@ class FancyToggle : CompoundButton {
     private fun getProgressOffset() = mThumbOffset * mProgress
     private fun getThumbLeft() = mStartThumbPosition + getProgressOffset()
     private fun getThumbRight(thumbLeft: Float) = thumbLeft + mThumbWidth
+    private fun getThumbCenter(thumbLeft: Float) = thumbLeft + mThumbWidth / 2f
 
     private fun touchEnded() {
         mCurrentState = when {
@@ -697,5 +705,6 @@ class FancyToggle : CompoundButton {
         private const val DEFAULT_ICON_SIZE = 48f
         private const val DEFAULT_SELF_MARGIN = 2f
         private const val DEFAULT_HEIGHT_RATIO = 4.5f
+        private const val BASE_CONTENT_BIAS = 0.5f
     }
 }
