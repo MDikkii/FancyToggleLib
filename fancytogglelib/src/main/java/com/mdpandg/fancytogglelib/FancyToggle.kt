@@ -16,7 +16,7 @@ import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.CompoundButton
+import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
 import kotlin.math.max
@@ -38,7 +38,7 @@ import kotlin.math.max
  *
  */
 
-class FancyToggle : CompoundButton {
+class FancyToggle : AppCompatCheckBox {
     interface OnStateChangeListener {
         fun onStateChange(state: ToggleState)
         fun onColorUpdate(midFillColor: Int, midStrokeColor: Int)
@@ -53,11 +53,6 @@ class FancyToggle : CompoundButton {
     }
 
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        initialization(attrs)
-    }
-
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
-            super(context, attrs, defStyleAttr, defStyleRes) {
         initialization(attrs)
     }
 
@@ -279,6 +274,7 @@ class FancyToggle : CompoundButton {
         mThumbContentWidth = mMaxContentWidth + mThumbHorizontalPadding * 2
 
         mCurrentState = if (isChecked) ToggleState.RIGHT else ToggleState.LEFT
+        animateToState(mCurrentState, true)
     }
 
     private fun setupTypeface() {
