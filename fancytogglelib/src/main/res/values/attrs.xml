@@ -31,6 +31,6 @@
         <attr name="fntThumbHorizontalMargin" format="dimension"/>
         <attr name="fntThumbVerticalMargin" format="dimension"/>
         <attr name="fntContentHorizontalBias" format="float"/>
-
+        <attr name="fntAnimationDuration" format="integer"/>
     </declare-styleable>
 </resources>

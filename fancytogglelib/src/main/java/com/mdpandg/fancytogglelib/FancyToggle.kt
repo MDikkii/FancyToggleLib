@@ -251,6 +251,11 @@ class FancyToggle : AppCompatCheckBox {
                 mHorizontalBias
             )
 
+            mThumbAnimationDuration = typedArray.getInteger(
+                R.styleable.FancyToggle_fntAnimationDuration,
+                mThumbAnimationDuration.toInt()
+            ).toLong()
+
             typedArray.recycle()
         }
 
