@@ -7,7 +7,7 @@
     tools:context=".MainActivity">
 
     <View
-        android:id="@+id/color_bar"
+        android:id="@+id/color_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -23,7 +23,7 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         android:background="@android:color/white"
-        app:layout_constraintTop_toTopOf="@+id/color_bar">
+        app:layout_constraintTop_toTopOf="@+id/color_view">
 
         <com.mdpandg.fancytogglelib.FancyToggle
             android:id="@+id/fancytoggle"

@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onColorUpdate(midFillColor: Int, midStrokeColor: Int) {
-                color_bar.setBackgroundColor(midFillColor)
+                color_view.setBackgroundColor(midFillColor)
             }
 
         }
