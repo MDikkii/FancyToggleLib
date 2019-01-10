@@ -20,13 +20,20 @@ class MainActivity : AppCompatActivity() {
 
         fancytoggle.mOnStateChangeListener = object : FancyToggle.OnStateChangeListener {
             override fun onStateChange(state: ToggleState) {
-                Log.d("state", state.name)
+                Log.d("State", state.name)
             }
 
             override fun onColorUpdate(midFillColor: Int, midStrokeColor: Int) {
                 color_view.setBackgroundColor(midFillColor)
             }
 
+            override fun onInteractionStart() {
+                Log.e("Interaction", "start")
+            }
+
+            override fun onInteractionEnd() {
+                Log.e("Interaction", "end")
+            }
         }
     }
 }

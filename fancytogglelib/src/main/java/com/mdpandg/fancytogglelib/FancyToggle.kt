@@ -40,8 +40,10 @@ import kotlin.math.max
 
 class FancyToggle : AppCompatCheckBox {
     interface OnStateChangeListener {
-        fun onStateChange(state: ToggleState)
-        fun onColorUpdate(midFillColor: Int, midStrokeColor: Int)
+        fun onStateChange(state: ToggleState) {}
+        fun onColorUpdate(midFillColor: Int, midStrokeColor: Int) {}
+        fun onInteractionStart() {}
+        fun onInteractionEnd() {}
     }
 
     constructor(context: Context?) : super(context) {
@@ -486,6 +488,7 @@ class FancyToggle : AppCompatCheckBox {
 
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
+                mOnStateChangeListener?.onInteractionStart()
                 parent.requestDisallowInterceptTouchEvent(true)
 
                 mStartX = event.x
@@ -601,6 +604,7 @@ class FancyToggle : AppCompatCheckBox {
         }
         mProgressAnimator?.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
+                mOnStateChangeListener?.onInteractionEnd()
                 val checked = when (mProgress) {
                     0f -> false
                     1f -> true
