@@ -15,7 +15,7 @@ buildscript {
         siteUrl = 'https://github.com/MDikkii/FancyToggleLib'
         gitUrl = 'https://github.com/MDikkii/FancyToggleLib.git'
 
-        libraryVersion = '1.0.8'
+        libraryVersion = '1.0.9'
 
         developerId = 'mdp&g'
         developerName = 'Mikolaj Demkow'
