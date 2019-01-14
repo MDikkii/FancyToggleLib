@@ -149,6 +149,10 @@ class FancyToggle : AppCompatCheckBox {
     private var mSelfMarginDoubled: Float = 0f
     private var mSelfMargin: Float = 0f
 
+    private var mIsOppositeClick = false
+    private var mStartedInThumb: Boolean = false
+    private var mIsInteractionStarted: Boolean = false
+
     private fun initialization(attrs: AttributeSet? = null) {
         mDensity = context.resources.displayMetrics.density
         mTouchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -477,30 +481,31 @@ class FancyToggle : AppCompatCheckBox {
         mThumbBottom = mToggleBottom - mThumbVerticalMargin
     }
 
-    private var isOppositeClick = false
-    private var startedInThumb: Boolean = false
-
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (!isEnabled) {
             return false
         }
 
+        if (mProgressAnimator?.isRunning == true) {
+            return true
+        }
+
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
-                mOnStateChangeListener?.onInteractionStart()
+                startInteraction()
                 parent.requestDisallowInterceptTouchEvent(true)
 
                 mStartX = event.x
                 mStartY = event.y
                 mLastX = mStartX
 
-                isOppositeClick = isEventOnOppositeSide()
-                startedInThumb = isEventInThumb()
+                mIsOppositeClick = isEventOnOppositeSide()
+                mStartedInThumb = isEventInThumb()
 
             }
             MotionEvent.ACTION_MOVE -> {
-                if (startedInThumb) {
+                if (mStartedInThumb) {
                     val x = event.x
                     setProgress(
                         mProgress + (x - mLastX) / mThumbOffset,
@@ -515,7 +520,7 @@ class FancyToggle : AppCompatCheckBox {
                 val deltaY = abs(event.y - mStartY)
                 val deltaTime = event.eventTime - event.downTime
 
-                if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout && isOppositeClick) {
+                if (deltaX < mTouchSlop && deltaY < mTouchSlop && deltaTime < mTapTimeout && mIsOppositeClick) {
                     clicked()
                 } else {
                     touchEnded()
@@ -534,8 +539,8 @@ class FancyToggle : AppCompatCheckBox {
     }
 
     private fun resetTouch() {
-        isOppositeClick = false
-        startedInThumb = false
+        mIsOppositeClick = false
+        mStartedInThumb = false
 
         parent.requestDisallowInterceptTouchEvent(false)
     }
@@ -574,7 +579,7 @@ class FancyToggle : AppCompatCheckBox {
         animateToState(mCurrentState)
     }
 
-    fun clicked() {
+    private fun clicked() {
         when (mCurrentState) {
             ToggleState.LEFT, ToggleState.LEFT_TO_RIGHT -> animateToState(ToggleState.RIGHT)
             ToggleState.RIGHT, ToggleState.RIGHT_TO_LEFT -> animateToState(ToggleState.LEFT)
@@ -603,8 +608,13 @@ class FancyToggle : AppCompatCheckBox {
             )
         }
         mProgressAnimator?.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationStart(animation: Animator?) {
+                startInteraction()
+            }
+
             override fun onAnimationEnd(animation: Animator) {
                 mOnStateChangeListener?.onInteractionEnd()
+                mIsInteractionStarted = false
                 val checked = when (mProgress) {
                     0f -> false
                     1f -> true
@@ -623,6 +633,13 @@ class FancyToggle : AppCompatCheckBox {
                 ToggleState.LEFT_TO_RIGHT -> (mThumbAnimationDuration * (1 - mProgress)).toLong()
                 ToggleState.RIGHT_TO_LEFT -> (mThumbAnimationDuration * mProgress).toLong()
             }
+        }
+    }
+
+    private fun startInteraction() {
+        if (!mIsInteractionStarted) {
+            mIsInteractionStarted = true
+            mOnStateChangeListener?.onInteractionStart()
         }
     }
 
